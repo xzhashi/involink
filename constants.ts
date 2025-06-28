@@ -23,7 +23,6 @@ import LuxuryGoldTemplate from './features/invoice/templates/LuxuryGoldTemplate'
 
 export const DEFAULT_CURRENCY = 'USD';
 
-// Note: Prices updated to INR for Razorpay integration
 export const PLANS_DATA: PlanData[] = [
   { 
     id: 'free_tier',
@@ -36,11 +35,12 @@ export const PLANS_DATA: PlanData[] = [
     variant: 'secondary',
     has_branding: true,
     sort_order: 1,
+    invoice_limit: 3,
   },
   { 
     id: 'pro_tier',
     name: 'Pro', 
-    price: '499', // Updated to INR
+    price: '15', 
     price_suffix: '/mo',
     features: ['Unlimited invoices', 'All templates', 'AI suggestions', 'Priority email support', 'Remove branding'],
     cta_text: 'Choose Pro',
@@ -48,11 +48,12 @@ export const PLANS_DATA: PlanData[] = [
     variant: 'primary',
     has_branding: false,
     sort_order: 2,
+    invoice_limit: null,
   },
   { 
     id: 'enterprise_tier',
     name: 'Enterprise', 
-    price: '1999', // Updated to INR
+    price: '49', 
     price_suffix: '/mo',
     features: ['All Pro features', 'Team collaboration (soon)', 'Custom integrations (soon)', 'Dedicated support'],
     cta_text: 'Contact Us',
@@ -60,6 +61,7 @@ export const PLANS_DATA: PlanData[] = [
     variant: 'secondary',
     has_branding: false,
     sort_order: 3,
+    invoice_limit: null,
   },
 ];
 

@@ -162,7 +162,7 @@ const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
           <footer className="text-center text-xs text-slate-400 mt-12 pt-6 border-t border-yellow-500/30 print:border-slate-300 print:text-slate-500">
             <p>We appreciate your valued business.</p>
             <p className={`${goldColor} print:text-yellow-700`} style={{ fontFamily: headingFont }}>{invoice.sender.name}</p>
-            {userPlan === 'free' && (
+            {userPlan?.has_branding && (
               <div className="text-center text-xs text-gray-500 mt-2 print:text-gray-400">
                 Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
               </div>

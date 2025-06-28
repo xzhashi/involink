@@ -66,7 +66,7 @@ export interface InvoiceTemplateProps {
   invoice: InvoiceData;
   upiLink?: string;
   qrCodeDataUrl?: string;
-  userPlan?: 'free' | 'pro' | 'enterprise'; // Added for plan-based branding
+  userPlan?: PlanData | null; // Pass the full plan object for more flexibility
 }
 
 export interface InvoiceTemplateInfo {
@@ -92,6 +92,7 @@ export interface PlanData {
   cta_text: string; // matches Supabase table
   is_current?: boolean; // For display on pricing page, client-side only
   has_branding: boolean; // True if "Powered by" should be shown
+  invoice_limit: number | null; // null for unlimited
   sort_order?: number; // For ordering plans
   variant?: 'primary' | 'secondary'; // For styling on pricing page
   created_at?: string; // For Supabase table

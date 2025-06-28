@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -36,7 +37,8 @@ const AdminPlansView: React.FC = () => {
       price_suffix: '/mo', 
       features: ['New Feature'], 
       cta_text: 'Choose Plan',
-      has_branding: false, 
+      has_branding: false,
+      invoice_limit: 0,
       sort_order: (contextPlans.length > 0 ? Math.max(...contextPlans.map(p => p.sort_order || 0)) : 0) + 1, 
       variant: 'secondary' 
     });
@@ -67,6 +69,7 @@ const AdminPlansView: React.FC = () => {
       price_suffix: currentPlan.price_suffix || (currentPlan.price === '0' ? '' : '/mo'), 
       features: currentPlan.features || [],
       cta_text: currentPlan.cta_text || 'Choose Plan',
+      invoice_limit: currentPlan.invoice_limit === null ? null : Number(currentPlan.invoice_limit ?? 0),
       is_current: currentPlan.is_current || false, // is_current is client-side display logic
       has_branding: currentPlan.has_branding || false,
       sort_order: typeof currentPlan.sort_order === 'number' ? currentPlan.sort_order : 0,
@@ -109,12 +112,20 @@ const AdminPlansView: React.FC = () => {
     const { name, value, type } = e.target;
     if (!currentPlan) return;
 
-    let processedValue: string | number | boolean = value;
+    let processedValue: string | number | boolean | null = value;
     if (type === 'checkbox') {
         processedValue = (e.target as HTMLInputElement).checked;
     } else if (name === 'sort_order') { 
         processedValue = parseInt(value, 10); 
         if (isNaN(processedValue as number)) processedValue = 0;
+    } else if (name === 'invoice_limit') {
+        if (value.trim().toLowerCase() === 'null' || value.trim() === '') {
+            processedValue = null;
+        } else {
+            const numVal = parseInt(value, 10);
+            // Revert to old value if input is not a non-negative number
+            processedValue = isNaN(numVal) || numVal < 0 ? currentPlan.invoice_limit : numVal;
+        }
     }
     setCurrentPlan({ ...currentPlan, [name]: processedValue });
   };
@@ -165,6 +176,7 @@ const AdminPlansView: React.FC = () => {
                   <th scope="col" className="px-6 py-3">Price</th>
                   <th scope="col" className="px-6 py-3">Features Count</th>
                   <th scope="col" className="px-6 py-3">Branding</th>
+                  <th scope="col" className="px-6 py-3">Inv. Limit</th>
                   <th scope="col" className="px-6 py-3">Order</th>
                   <th scope="col" className="px-6 py-3">Actions</th>
                 </tr>
@@ -173,9 +185,10 @@ const AdminPlansView: React.FC = () => {
                 {contextPlans.map(plan => (
                   <tr key={plan.id} className="bg-white border-b hover:bg-neutral-lightest">
                     <td className="px-6 py-4 font-medium text-neutral-darkest">{plan.name}</td>
-                    <td className="px-6 py-4">₹{plan.price}{plan.price_suffix}</td> 
+                    <td className="px-6 py-4">${plan.price}{plan.price_suffix}</td> 
                     <td className="px-6 py-4">{plan.features.length}</td>
-                    <td className="px-6 py-4">{plan.has_branding ? 'Yes' : 'No (Whitelabel)'}</td>
+                    <td className="px-6 py-4">{plan.has_branding ? 'Yes' : 'No'}</td>
+                    <td className="px-6 py-4">{plan.invoice_limit === null ? 'Unlimited' : plan.invoice_limit}</td>
                     <td className="px-6 py-4">{plan.sort_order}</td>
                     <td className="px-6 py-4 space-x-2">
                       <Button variant="ghost" size="sm" className="text-primary-DEFAULT !px-2" onClick={() => openModalForEdit(plan)} title="Edit Plan" disabled={isProcessing}>
@@ -213,9 +226,10 @@ const AdminPlansView: React.FC = () => {
                 <Input label="Plan ID (unique, no spaces)" name="id" value={currentPlan.id || ''} onChange={handleModalInputChange} disabled={isEditing || isProcessing} />
                 <Input label="Plan Name" name="name" value={currentPlan.name || ''} onChange={handleModalInputChange} required disabled={isProcessing} />
                 <div className="grid grid-cols-2 gap-4">
-                    <Input label="Price (e.g., 0, 499)" name="price" type="text" value={currentPlan.price || '0'} onChange={handleModalInputChange} required disabled={isProcessing} />
+                    <Input label="Price (e.g., 0, 15)" name="price" type="text" value={currentPlan.price || '0'} onChange={handleModalInputChange} required disabled={isProcessing} />
                     <Input label="Price Suffix (e.g., /mo)" name="price_suffix" value={currentPlan.price_suffix || ''} onChange={handleModalInputChange} disabled={isProcessing} /> 
                 </div>
+                 <Input label="Invoice Limit (type 'null' for unlimited)" name="invoice_limit" type="text" value={currentPlan.invoice_limit === null ? 'null' : String(currentPlan.invoice_limit)} onChange={handleModalInputChange} disabled={isProcessing} />
                 <Input label="CTA Button Text" name="cta_text" value={currentPlan.cta_text || 'Choose Plan'} onChange={handleModalInputChange} disabled={isProcessing} /> 
                 
                 <div>

@@ -76,11 +76,11 @@ const WatercolorWashTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
         <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
           {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="bg-white/60 border border-pink-200/50 p-4 rounded-lg shadow-sm backdrop-blur-sm space-y-3 text-center md:text-left print:bg-slate-50">
-              <h4 className="font-semibold text-pink-500 mb-2 text-md">Payment Options</h4>
+              <h4 className="font-semibold text-pink-500 mb-2 text-md">Payment Details</h4>
               {qrCodeDataUrl && (
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">Scan to Pay (UPI):</p>
-                  <img src={qrCodeDataUrl} alt="UPI QR Code" className="border border-pink-300 p-1 rounded-md inline-block bg-white" style={{width: '90px', height: '90px'}}/>
+                  <p className="text-xs text-slate-500 mb-1">Scan for UPI:</p>
+                  <img src={qrCodeDataUrl} alt="UPI QR Code" className="border border-pink-300 p-1 bg-white inline-block rounded-md" style={{width: '90px', height: '90px'}}/>
                 </div>
               )}
               {upiLink && (
@@ -89,71 +89,71 @@ const WatercolorWashTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
                     href={upiLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block px-5 py-2 bg-pink-400 text-white text-sm font-medium rounded-md shadow-md hover:bg-pink-500 transition-colors"
+                    className="inline-block px-5 py-2 bg-pink-400 text-white text-sm font-medium rounded-full shadow-md hover:bg-pink-500 transition-colors"
                   >
-                    Pay via UPI Link
+                    Pay with UPI
                   </a>
                 </div>
               )}
-               {invoice.manualPaymentLink && (
+              {invoice.manualPaymentLink && (
                  <div>
                     <a
                         href={invoice.manualPaymentLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block px-5 py-2 bg-sky-400 text-white text-sm font-medium rounded-md shadow-md hover:bg-sky-500 transition-colors"
+                        className="inline-block px-5 py-2 bg-sky-400 text-white text-sm font-medium rounded-full shadow-md hover:bg-sky-500 transition-colors"
                     >
-                        Online Payment
+                        Custom Payment Link
                     </a>
                 </div>
               )}
             </div>
           )}
         </div>
-        <div className="w-full md:w-2/5 lg:w-1/3 space-y-2 text-sm bg-white/60 border border-sky-200/50 p-4 rounded-lg shadow-sm backdrop-blur-sm">
+        <div className="w-full md:w-2/5 lg:w-1/3 space-y-2 text-sm ml-auto bg-white/60 p-5 rounded-lg shadow-lg backdrop-blur-sm border-t-4 border-pink-400">
           <div className="flex justify-between">
             <span className="text-slate-600">Subtotal:</span>
-            <span className="text-slate-700 font-medium">{invoice.currency} {subtotal.toFixed(2)}</span>
+            <span className="text-slate-700 font-semibold">{invoice.currency} {subtotal.toFixed(2)}</span>
           </div>
           {invoice.taxRate > 0 && (
             <div className="flex justify-between">
               <span className="text-slate-600">Tax ({invoice.taxRate}%):</span>
-              <span className="text-slate-700 font-medium">{invoice.currency} {taxAmount.toFixed(2)}</span>
+              <span className="text-slate-700 font-semibold">{invoice.currency} {taxAmount.toFixed(2)}</span>
             </div>
           )}
           {invoice.discount.value > 0 && (
              <div className="flex justify-between">
               <span className="text-slate-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
-              <span className="text-red-500 font-medium">- {invoice.currency} {discountAmount.toFixed(2)}</span>
+              <span className="text-red-600 font-medium">- {invoice.currency} {discountAmount.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between pt-3 border-t-2 border-pink-300 mt-3">
-            <span className="font-bold text-xl text-pink-500">Total Amount:</span>
+          <div className="flex justify-between pt-3 border-t-2 border-dashed border-pink-300 mt-3">
+            <span className="font-bold text-xl text-pink-500">Total</span>
             <span className="font-bold text-xl text-pink-500">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>
       </section>
 
       {(invoice.notes || invoice.terms) && (
-      <section className="mt-10 pt-6 border-t border-sky-200/70 text-xs text-slate-600">
+      <section className="mt-10 pt-6 border-t border-dotted border-slate-400 text-xs text-slate-600">
         {invoice.notes && (
-          <div className="mb-4 bg-white/50 p-4 rounded-lg shadow-sm backdrop-blur-sm">
-            <h4 className="font-semibold text-sky-600 mb-1" style={{ fontFamily: "'Dancing Script', cursive" }}>A little note...</h4>
+          <div className="mb-4">
+            <h4 className="font-semibold text-slate-700 mb-1" style={{ fontFamily: "'Dancing Script', cursive" }}>A little note for you:</h4>
             <p className="whitespace-pre-wrap">{invoice.notes}</p>
           </div>
         )}
         {invoice.terms && (
-          <div className="bg-white/50 p-4 rounded-lg shadow-sm backdrop-blur-sm">
-            <h4 className="font-semibold text-sky-600 mb-1">Terms:</h4>
+          <div>
+            <h4 className="font-semibold text-slate-700 mb-1">Our Terms:</h4>
             <p className="whitespace-pre-wrap">{invoice.terms}</p>
           </div>
         )}
       </section>
       )}
 
-      <footer className="text-center text-xs text-slate-500 mt-12 pt-6 border-t border-pink-200">
-        <p>Thank you for your business!</p>
-        {userPlan === 'free' && (
+      <footer className="text-center text-xs text-slate-500 mt-12 pt-6 border-t border-dotted border-slate-400">
+        <p>Thank you for the lovely opportunity to work with you.</p>
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

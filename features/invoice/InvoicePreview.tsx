@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { InvoiceData, InvoiceTemplateProps } from '../../types';
+import { InvoiceData, InvoiceTemplateProps, PlanData } from '../../types';
 import { AVAILABLE_TEMPLATES } from '../../constants';
 
 interface InvoicePreviewProps {
@@ -8,7 +7,7 @@ interface InvoicePreviewProps {
   upiLink?: string;
   qrCodeDataUrl?: string;
   temporaryLogoUrl?: string | null; 
-  userPlan?: 'free' | 'pro' | 'enterprise'; // New prop for user plan
+  userPlan?: PlanData | null; // New prop for user plan
 }
 
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, upiLink, qrCodeDataUrl, temporaryLogoUrl, userPlan }) => {

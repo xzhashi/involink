@@ -152,7 +152,7 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
 
       <footer className="text-center text-xs text-gray-500 print:text-gray-500 mt-12 pt-6 border-t border-gray-700 print:border-gray-300">
         <p>Innovate. Create. Deliver. | {invoice.sender.name}</p>
-         {userPlan === 'free' && (
+         {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-600 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

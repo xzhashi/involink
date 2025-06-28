@@ -156,7 +156,7 @@ const IndustrialGritTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
 
       <footer className="text-center text-xs text-slate-500 mt-12 pt-6 border-t border-slate-600 print:border-slate-300 print:text-slate-500">
         <p>{invoice.sender.name} - BUILT TO LAST.</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-500 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

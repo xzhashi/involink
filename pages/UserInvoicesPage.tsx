@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlans } from '../contexts/PlanContext';
 import { fetchUserInvoicesFromSupabase, deleteInvoiceFromSupabase } from '../services/supabaseClient';
 import { InvoiceData } from '../types';
 import Button from '../components/common/Button';
@@ -12,6 +13,7 @@ import { DEFAULT_CURRENCY } from '../constants';
 
 const UserInvoicesPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isLimitReached } = usePlans();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
@@ -90,9 +92,13 @@ const UserInvoicesPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-neutral-darkest">My Invoices</h1>
-        <Link to="/create">
-          <Button variant="primary" leftIcon={<PlusIcon className="w-5 h-5" />}>
-            Create New Invoice
+        <Link to={isLimitReached ? '/pricing' : '/create'}>
+          <Button 
+            variant="primary" 
+            leftIcon={<PlusIcon className="w-5 h-5" />}
+            title={isLimitReached ? "Free plan limit reached. Click to upgrade." : "Create a new invoice"}
+          >
+            {isLimitReached ? 'Upgrade to Create More' : 'Create New Invoice'}
           </Button>
         </Link>
       </div>
@@ -107,9 +113,13 @@ const UserInvoicesPage: React.FC = () => {
             Get started by creating your first invoice.
           </p>
           <div className="mt-6">
-            <Link to="/create">
-              <Button variant="secondary" leftIcon={<PlusIcon className="w-4 h-4 mr-1.5" />}>
-                Create Invoice
+            <Link to={isLimitReached ? '/pricing' : '/create'}>
+              <Button 
+                variant="secondary" 
+                leftIcon={<PlusIcon className="w-4 h-4 mr-1.5" />}
+                disabled={isLimitReached}
+              >
+                {isLimitReached ? 'Plan Limit Reached' : 'Create Invoice'}
               </Button>
             </Link>
           </div>

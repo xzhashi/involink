@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlans } from '../contexts/PlanContext';
 import { SparklesIcon } from './icons/SparklesIcon';
 import Button from './common/Button';
 import { UserCircleIcon } from './icons/UserCircleIcon'; 
@@ -11,6 +11,7 @@ import { CogIcon } from './icons/CogIcon'; // For Admin link
 
 const Navbar: React.FC = () => {
   const { user, logout, loading, isAdmin } = useAuth(); // Added isAdmin
+  const { isLimitReached } = usePlans();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -37,6 +38,13 @@ const Navbar: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleNewInvoiceClick = (e: React.MouseEvent) => {
+    if (isLimitReached) {
+      e.preventDefault();
+      navigate('/pricing');
+    }
+  };
 
 
   return (
@@ -107,9 +115,12 @@ const Navbar: React.FC = () => {
                        <Link 
                         to="/create" 
                         className="block sm:hidden px-4 py-2 text-sm text-neutral-dark hover:bg-neutral-lightest hover:text-primary-dark"
-                        onClick={() => setDropdownOpen(false)}
+                        onClick={(e) => {
+                           handleNewInvoiceClick(e);
+                           setDropdownOpen(false);
+                        }}
                       >
-                        New Invoice
+                        {isLimitReached ? 'Plan Limit Reached' : 'New Invoice'}
                       </Link>
                       <div className="border-t border-neutral-light my-1"></div>
                       <button
@@ -122,13 +133,14 @@ const Navbar: React.FC = () => {
                     </div>
                   )}
                 </div>
-                 <Link to="/create" className="hidden sm:inline-block">
+                 <Link to={isLimitReached ? '/pricing' : '/create'} className="hidden sm:inline-block">
                     <Button 
                       variant="primary" 
                       size="sm"
                       className="!px-3 !py-1.5"
+                      title={isLimitReached ? "Free plan limit reached. Click to upgrade." : "Create a new invoice"}
                     >
-                     + New Invoice
+                     {isLimitReached ? 'Upgrade Plan' : '+ New Invoice'}
                     </Button>
                   </Link>
               </>

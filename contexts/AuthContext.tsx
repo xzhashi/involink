@@ -24,7 +24,6 @@ interface AuthContextType {
   login: (email: string, password_string: string) => Promise<LoginSignUpResponse>;
   signup: (email: string, password_string: string) => Promise<LoginSignUpResponse>;
   logout: () => Promise<void>;
-  refreshAuthStatus: () => Promise<void>; // Added to refresh user state
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,15 +45,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUserRole(null);
       setIsAdmin(false);
       setUser(null);
-    }
-  };
-
-  const refreshAuthStatus = async () => {
-    const { data: { user: refreshedUser }, error } = await supabase.auth.getUser();
-    if (error) {
-      console.error("Error refreshing user status:", error);
-    } else {
-      updateUserRoleAndAdminStatus(refreshedUser);
     }
   };
 
@@ -151,7 +141,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     signup,
     logout,
-    refreshAuthStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

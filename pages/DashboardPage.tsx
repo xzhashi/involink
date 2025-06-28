@@ -2,12 +2,15 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/common/Button';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlans } from '../contexts/PlanContext';
 import { EyeIcon } from '../components/icons/EyeIcon'; // Placeholder, can be used for "View Invoices"
 import { PlusIcon } from '../components/icons/PlusIcon';
 
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { isLimitReached } = usePlans();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-neutral-darkest mb-6">Dashboard</h1>
@@ -23,9 +26,14 @@ const DashboardPage: React.FC = () => {
                 View My Invoices
               </Button>
             </Link>
-            <Link to="/create">
-              <Button variant="primary" className="w-full justify-start text-left" leftIcon={<PlusIcon className="w-5 h-5"/>}>
-                Create New Invoice
+            <Link to={isLimitReached ? '/pricing' : '/create'}>
+              <Button 
+                variant="primary" 
+                className="w-full justify-start text-left" 
+                leftIcon={<PlusIcon className="w-5 h-5"/>}
+                title={isLimitReached ? "Free plan limit reached. Click to upgrade." : "Create a new invoice"}
+              >
+                {isLimitReached ? 'Upgrade to Create' : 'Create New Invoice'}
               </Button>
             </Link>
           </div>

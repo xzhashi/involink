@@ -160,7 +160,7 @@ const CorporateTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, q
       <footer className="text-center text-xs text-gray-500 mt-12 pt-6 border-t border-gray-300">
         <p>Thank you for your business, {invoice.recipient.name}.</p>
         <p>{invoice.sender.name} | {invoice.sender.email} | {invoice.sender.phone}</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

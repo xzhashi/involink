@@ -124,7 +124,7 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
           )}
           {invoice.discount.value > 0 && (
              <div className="flex justify-between p-2 rounded bg-slate-800 print:bg-slate-100">
-              <span className="text-slate-400 print:text-slate-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`})</span>
+              <span className="text-slate-400 print:text-slate-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
               <span className="text-pink-400 font-medium print:text-pink-600">- {invoice.currency} {discountAmount.toFixed(2)}</span>
             </div>
           )}
@@ -154,7 +154,7 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
 
       <footer className="text-center text-xs text-slate-500 mt-12 pt-6 border-t border-slate-700 print:border-slate-300 print:text-slate-500">
         <p>{invoice.sender.name} - Modern Solutions, Expertly Delivered.</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-600 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

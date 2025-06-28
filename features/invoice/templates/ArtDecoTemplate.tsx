@@ -157,7 +157,7 @@ const ArtDecoTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
           <footer className="text-center text-xs text-slate-400 mt-12 pt-6 border-t border-amber-400/30 print:border-slate-300 print:text-slate-500">
             <p>Thank you for your esteemed patronage.</p>
             <p style={{fontFamily: "'Cinzel', serif"}}>{invoice.sender.name}</p>
-            {userPlan === 'free' && (
+            {userPlan?.has_branding && (
               <div className="text-center text-xs text-gray-500 mt-2 print:text-gray-400">
                 Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
               </div>

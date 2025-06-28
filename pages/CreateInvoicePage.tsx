@@ -1,10 +1,9 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
 import InvoiceForm from '../features/invoice/InvoiceForm';
 import InvoicePreview from '../features/invoice/InvoicePreview';
 import TemplateSwitcher from '../features/invoice/TemplateSwitcher';
-import { InvoiceData, InvoiceItem, CompanyDetails } from '../types';
+import { InvoiceData, InvoiceItem, CompanyDetails, PlanData } from '../types';
 import { INITIAL_INVOICE_STATE, AVAILABLE_TEMPLATES, DEFAULT_CURRENCY } from '../constants';
 import Button from '../components/common/Button';
 import { DownloadIcon } from '../components/icons/DownloadIcon';
@@ -13,14 +12,36 @@ import { WhatsAppIcon } from '../components/icons/WhatsAppIcon';
 import { suggestItemDescriptions, suggestInvoiceNote } from '../services/geminiService';
 import { calculateInvoiceTotal } from '../utils';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlans } from '../contexts/PlanContext'; // Import usePlans
 import { saveInvoiceToSupabase, fetchLatestInvoiceFromSupabase, fetchInvoiceByIdFromSupabase } from '../services/supabaseClient';
 import { XMarkIcon } from '../components/icons/XMarkIcon'; // For modal close
 import { PlusIcon } from '../components/icons/PlusIcon';
 import MobileActionsBar from '../components/MobileActionsBar'; // New: Mobile Actions
 import { PaletteIcon } from '../components/icons/PaletteIcon'; // New: Palette Icon
+import { SparklesIcon } from '../components/icons/SparklesIcon';
+
+const LimitReachedModal: React.FC<{ plan: PlanData | null, onClose: () => void }> = ({ plan, onClose }) => (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[80] no-print backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="limit-modal-title">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md text-center p-8">
+            <SparklesIcon className="w-12 h-12 mx-auto text-primary-DEFAULT mb-4" />
+            <h3 id="limit-modal-title" className="text-2xl font-bold text-neutral-darkest mb-3">Free Plan Limit Reached</h3>
+            <p className="text-neutral-DEFAULT mb-6">
+                You've created the maximum of {plan?.invoice_limit || 3} invoices for this month. Please upgrade to create unlimited invoices and unlock all premium features.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+                <Button variant="ghost" onClick={onClose}>Maybe Later</Button>
+                <Link to="/pricing">
+                  <Button variant="primary" className="w-full">View Plans & Upgrade</Button>
+                </Link>
+            </div>
+        </div>
+    </div>
+);
+
 
 const CreateInvoicePage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isLimitReached, currentUserPlan } = usePlans();
   const location = useLocation();
   const navigate = useNavigate();
   const { invoiceDbId } = useParams<{ invoiceDbId?: string }>();
@@ -37,7 +58,8 @@ const CreateInvoicePage: React.FC = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showWhatsAppOptionsModal, setShowWhatsAppOptionsModal] = useState(false);
   const [temporaryLogoUrl, setTemporaryLogoUrl] = useState<string | null>(null);
-  const [showTemplateModal, setShowTemplateModal] = useState(false); // New: State for template modal
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
 
   const sanitizeInvoiceData = useCallback((data: Partial<InvoiceData> | null, baseState: InvoiceData): InvoiceData => {
@@ -101,6 +123,11 @@ const CreateInvoicePage: React.FC = () => {
   useEffect(() => {
     if (authLoading) return; 
 
+    // Plan limit check
+    if (isLimitReached && !invoiceDbId && !pageLoading) {
+      setShowLimitModal(true);
+    }
+
     let isMounted = true;
     setPageLoading(true);
 
@@ -121,8 +148,6 @@ const CreateInvoicePage: React.FC = () => {
             if (loadedInvoiceData) newInvoiceFlag = false;
           } else { 
             // Don't fetch latest for /create, always start new unless specific ID is given
-            // loadedInvoiceData = await fetchLatestInvoiceFromSupabase(user.id);
-            // if (loadedInvoiceData) newInvoiceFlag = false; // This line was causing existing invoice to load on /create
           }
         } else { 
           const savedInvoiceRaw = localStorage.getItem('currentInvoice');
@@ -131,8 +156,6 @@ const CreateInvoicePage: React.FC = () => {
               const parsed = JSON.parse(savedInvoiceRaw);
               if (typeof parsed === 'object' && parsed !== null) {
                 loadedInvoiceData = parsed;
-                // For anonymous users, if they land on /create, it's ambiguous if it's new or resume.
-                // Let's assume resume for now if local data exists.
                 newInvoiceFlag = false; 
               }
             } catch (e) {
@@ -171,7 +194,7 @@ const CreateInvoicePage: React.FC = () => {
     return () => {
         isMounted = false;
     };
-  }, [user, authLoading, invoiceDbId, sanitizeInvoiceData, navigate]);
+  }, [user, authLoading, invoiceDbId, sanitizeInvoiceData, navigate, isLimitReached]);
 
   useEffect(() => {
     if (pageLoading || authLoading) return; 
@@ -179,7 +202,12 @@ const CreateInvoicePage: React.FC = () => {
         // Avoid saving initial state if we are loading an existing invoice but it hasn't loaded yet.
         return;
     }
-
+    
+    // Prevent auto-saving for new invoices if user is over their limit
+    if (isLimitReached && !invoice.db_id) {
+        setSaveStatus('error');
+        return;
+    }
 
     const autoSave = async () => {
       setSaveStatus('saving');
@@ -227,7 +255,7 @@ const CreateInvoicePage: React.FC = () => {
         return () => clearTimeout(debounceTimer);
     }
 
-  }, [invoice, user, pageLoading, authLoading, navigate, invoiceDbId]); 
+  }, [invoice, user, pageLoading, authLoading, navigate, invoiceDbId, isLimitReached]); 
   
   const handleInvoiceChange = useCallback(<K extends keyof InvoiceData>(key: K, value: InvoiceData[K]) => {
     setInvoice(prev => ({ ...prev, [key]: value }));
@@ -409,6 +437,10 @@ const CreateInvoicePage: React.FC = () => {
   };
 
   const handleCreateNew = () => {
+    if (isLimitReached) {
+        setShowLimitModal(true);
+        return;
+    }
     const newInvoiceState = sanitizeInvoiceData(null, {...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`});
     if(user) newInvoiceState.user_id = user.id;
     setInvoice(newInvoiceState);
@@ -438,9 +470,6 @@ const CreateInvoicePage: React.FC = () => {
     setTemporaryLogoUrl(logoDataUrl);
   }, []);
 
-  // Simulate user plan for branding
-  const userPlan = 'free'; // In a real app, this would come from AuthContext or a dedicated PlanContext
-
   if (authLoading || pageLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
@@ -449,12 +478,21 @@ const CreateInvoicePage: React.FC = () => {
     );
   }
 
+  const isSaveDisabled = isLimitReached && !invoice.db_id;
+
   return (
     <>
+      {showLimitModal && <LimitReachedModal plan={currentUserPlan} onClose={() => setShowLimitModal(false)}/>}
+
       <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 pb-16 lg:pb-0"> {/* Added pb for mobile nav */}
         <div className="lg:w-2/5 xl:w-1/3 no-print lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto thin-scrollbar p-1">
           <div className="space-y-6">
-              {/* Template switcher button is now inside InvoiceForm */}
+              {isSaveDisabled && (
+                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md" role="alert">
+                    <p className="font-bold">Plan Limit Reached</p>
+                    <p className="text-sm">Please upgrade your plan to save new invoices. Changes will not be saved.</p>
+                </div>
+              )}
               <InvoiceForm
                 invoice={invoice}
                 invoiceTotal={invoiceTotal}
@@ -480,7 +518,7 @@ const CreateInvoicePage: React.FC = () => {
                           {saveStatus === 'saving' && <span className="text-neutral-DEFAULT italic">Saving...</span>}
                           {saveStatus === 'saved' && <span className="text-green-600 italic">Saved!</span>}
                           {saveStatus === 'local_saved' && <span className="text-blue-600 italic">Saved locally.</span>}
-                          {saveStatus === 'error' && <span className="text-red-500 italic">Save error!</span>}
+                          {saveStatus === 'error' && <span className="text-red-500 italic">{isSaveDisabled ? "Limit Reached" : "Save error!"}</span>}
                           {saveStatus === 'idle' && !invoiceDbId && JSON.stringify(invoice) === JSON.stringify(INITIAL_INVOICE_STATE) &&  <span className="text-neutral-DEFAULT italic">Unsaved</span>}
                           {saveStatus === 'idle' && (invoiceDbId || JSON.stringify(invoice) !== JSON.stringify(INITIAL_INVOICE_STATE)) && <span className="text-neutral-DEFAULT italic">Auto-saves</span>}
                       </div>
@@ -526,9 +564,10 @@ const CreateInvoicePage: React.FC = () => {
                       variant="ghost" 
                       size="md" 
                       className="w-full mt-2 border-primary-light text-primary-dark hover:bg-primary-lightest"
-                      title="Create a new blank invoice"
+                      title={isLimitReached ? "Plan limit reached" : "Create a new blank invoice"}
+                      disabled={isLimitReached}
                     >
-                      Create New Invoice
+                      {isLimitReached ? "Plan Limit Reached" : "Create New Invoice"}
                     </Button>
               </div>
           </div>
@@ -540,7 +579,7 @@ const CreateInvoicePage: React.FC = () => {
                   upiLink={generatedUpiLink}
                   qrCodeDataUrl={qrCodeDataUrl}
                   temporaryLogoUrl={temporaryLogoUrl}
-                  userPlan={userPlan} // Pass simulated user plan
+                  userPlan={currentUserPlan} // Pass full plan object
                />
           </div>
         </div>

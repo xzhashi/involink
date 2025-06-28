@@ -158,7 +158,7 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
       
       <footer className="text-center text-xs text-neutral-DEFAULT mt-12 pt-6 border-t border-neutral-light">
         <p>Thank you for choosing {invoice.sender.name || "us"}!</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

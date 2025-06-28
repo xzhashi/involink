@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Input from '../components/common/Input';
@@ -8,6 +8,7 @@ import { SparklesIcon } from '../components/icons/SparklesIcon';
 const AuthPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLogin, setIsLogin] = useState(true); // Toggle between Login and Signup
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -17,6 +18,14 @@ const AuthPage: React.FC = () => {
   const location = useLocation();
 
   const from = location.state?.from?.pathname || "/create"; // Redirect after login
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   React.useEffect(() => {
     if (user && !authLoading) { // Ensure auth state is resolved before navigating
@@ -34,6 +43,11 @@ const AuthPage: React.FC = () => {
       if (isLogin) {
         const response = await login(email, password);
         if (response.error) throw response.error;
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
         // Navigation is handled by useEffect after user state updates
       } else {
         const response = await signup(email, password);
@@ -98,6 +112,25 @@ const AuthPage: React.FC = () => {
             placeholder="••••••••"
             disabled={loadingUi || authLoading}
           />
+
+          {isLogin && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input 
+                  id="remember-me" 
+                  name="remember-me" 
+                  type="checkbox" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-primary-DEFAULT focus:ring-primary-dark border-gray-300 rounded" 
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-neutral-dark">
+                  Remember me
+                </label>
+              </div>
+            </div>
+          )}
+
           <div>
             <Button type="submit" className="w-full" disabled={loadingUi || authLoading}>
               {loadingUi ? (isLogin ? 'Signing in...' : 'Creating account...') : (isLogin ? 'Sign in' : 'Create account')}

@@ -155,7 +155,7 @@ const VintageScrollTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
             {/* You could add a placeholder for a signature image here if desired */}
             {/* <div className="mt-4">_________________________</div> */}
             {/* <p>Authorised Signature</p> */}
-            {userPlan === 'free' && (
+            {userPlan?.has_branding && (
               <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
                 Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
               </div>

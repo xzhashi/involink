@@ -1,15 +1,18 @@
 
+
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { PlanData } from '../types';
-// import { PLANS_DATA as INITIAL_PLANS_DATA } from '../constants'; // No longer direct initial source
+import { useAuth } from './AuthContext';
+import { supabase } from '../services/supabaseClient';
 import { 
   fetchAllPlansAdmin, 
   createPlanAdmin, 
   updatePlanAdmin, 
   deletePlanAdmin 
-} from '../services/adminService'; // Import admin service functions
+} from '../services/adminService';
 
 interface PlanContextType {
+  // For Admin plan management
   plans: PlanData[];
   getPlans: () => PlanData[]; 
   addPlanContext: (plan: Omit<PlanData, 'created_at' | 'updated_at' | 'id'> & { id?: string }) => Promise<{ success: boolean; error?: string | null }>;
@@ -17,14 +20,35 @@ interface PlanContextType {
   deletePlanContext: (planId: string) => Promise<{ success: boolean; error?: string | null }>;
   loading: boolean;
   error: string | null;
+
+  // For current user's plan state
+  currentUserPlan: PlanData | null;
+  isLimitReached: boolean;
+  changePlan: (planId: string) => Promise<void>;
+  processing: boolean;
 }
+
+const getMonthDateRange = () => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+  return { startOfMonth, endOfMonth };
+};
 
 const PlanContext = createContext<PlanContextType | undefined>(undefined);
 
 export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
+  
+  // Admin-related state
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // User-specific plan state
+  const [currentUserPlan, setCurrentUserPlan] = useState<PlanData | null>(null);
+  const [isLimitReached, setIsLimitReached] = useState(false);
+  const [processing, setProcessing] = useState(false); // For plan change processing
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
@@ -33,15 +57,9 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const fetchedPlans = await fetchAllPlansAdmin();
       setPlans(fetchedPlans.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
     } catch (e: any) {
-      let detailedErrorMessage = "Unknown error fetching plans.";
-      if (e) {
-        detailedErrorMessage = e.message || JSON.stringify(e); // Fallback to stringifying if no message
-        if (e.details) detailedErrorMessage += ` Details: ${e.details}`;
-        if (e.hint) detailedErrorMessage += ` Hint: ${e.hint}`;
-      }
-      setError(`Failed to load plans: ${detailedErrorMessage}`);
-      console.error("PlanContext: Error loading plans object:", e); // Log the full object for debugging
-      console.error("PlanContext: Detailed error loading plans:", detailedErrorMessage); // Log the detailed message
+      const errorMessage = e?.message || "Failed to fetch plans.";
+      setError(errorMessage);
+      console.error("PlanContext: Error loading plans:", e);
     } finally {
       setLoading(false);
     }
@@ -50,6 +68,68 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     loadPlans();
   }, [loadPlans]);
+  
+  // Effect to set the current user's plan based on their metadata
+  useEffect(() => {
+    if (user && plans.length > 0) {
+      const planId = user.user_metadata?.planId || 'free_tier';
+      const foundPlan = plans.find(p => p.id === planId) || plans.find(p => p.id === 'free_tier') || null;
+      setCurrentUserPlan(foundPlan);
+    } else {
+      setCurrentUserPlan(null);
+    }
+  }, [user, plans]);
+
+  // Effect to check if the user has reached their invoice limit for the month
+  useEffect(() => {
+    const checkLimit = async () => {
+      if (!user || !currentUserPlan || currentUserPlan.invoice_limit === null) {
+        setIsLimitReached(false);
+        return;
+      }
+      
+      const { startOfMonth, endOfMonth } = getMonthDateRange();
+      const { count, error: countError } = await supabase
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startOfMonth)
+        .lte('created_at', endOfMonth);
+
+      if (countError) {
+        console.error("Error counting user invoices:", countError);
+        setIsLimitReached(false); // Default to not-reached on error
+        return;
+      }
+      
+      setIsLimitReached((count || 0) >= currentUserPlan.invoice_limit);
+    };
+
+    if (!authLoading) {
+      checkLimit();
+    }
+  }, [user, currentUserPlan, authLoading]);
+
+  // Function for a user to change their own plan
+  const changePlan = async (planId: string) => {
+    if (!user) {
+        console.error("Cannot change plan, no user is logged in.");
+        return;
+    };
+    setProcessing(true);
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: { planId: planId, status: 'Active' }
+    });
+    
+    if (updateError) {
+      setError(updateError.message);
+      console.error("Error changing plan:", updateError);
+    }
+    // The onAuthStateChange listener in AuthContext will trigger a user update,
+    // which in turn will update currentUserPlan via the useEffect above.
+    setProcessing(false);
+  };
+
 
   const getPlans = () => {
     return [...plans].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -99,14 +179,19 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: false, error: errorMessage };
   };
 
-  const value = {
+  const value: PlanContextType = {
     plans: getPlans(), 
     getPlans,
     addPlanContext,
     updatePlanContext,
     deletePlanContext,
-    loading,
+    loading: loading || authLoading, // Combine loading states
     error,
+    // User-specific values
+    currentUserPlan,
+    isLimitReached,
+    changePlan,
+    processing,
   };
 
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;

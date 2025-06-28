@@ -158,7 +158,7 @@ const RetroPixelTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
 
       <footer className="text-center text-xs text-lime-500 mt-8 pt-3 border-t-2 border-dashed border-lime-400 print:border-lime-500 print:text-slate-500">
         <p>THANK YOU! GAME ON!</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-500 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

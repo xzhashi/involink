@@ -151,7 +151,7 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
 
       <footer className="text-center text-xs text-stone-500 mt-16 pt-8 border-t border-stone-300">
         <p>Your trust in our services is greatly appreciated.</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

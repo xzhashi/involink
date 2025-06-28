@@ -16,7 +16,7 @@ export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> =
   let totalUsers = 0;
   let activeSubscriptions = 0;
 
-  // Try to fetch users for stats - will now use the database function
+  // Try to fetch users for stats
   try {
     const users = await fetchAllUsersAdmin(); 
     totalUsers = users.length;
@@ -24,8 +24,8 @@ export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> =
       (u.raw_user_meta_data?.status === 'Active' || u.user_metadata?.status === 'Active') &&
       (u.raw_user_meta_data?.planId !== 'free_tier' && u.user_metadata?.planId !== 'free_tier')
     ).length;
-  } catch (userError) {
-    console.warn("AdminDashboardStats: Could not fetch user data for stats, counts will be 0.", userError);
+  } catch (userError: any) {
+    console.warn("AdminDashboardStats: Could not fetch user data for stats, counts will be 0.", userError.message || userError);
   }
   
   // Fetch invoice count for the current month
@@ -56,19 +56,26 @@ export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> =
 
 // --- User Management ---
 
-// ** NEW APPROACH: Use an Edge Function for listing users **
 export const fetchAllUsersAdmin = async (): Promise<AdminUser[]> => {
+  // Edge Function `admin-list-users`
   const { data, error } = await supabase.functions.invoke('admin-list-users');
-
+  
   if (error) {
     console.error('Error invoking admin-list-users function:', error);
     const contextError = (error as any).context?.message;
-    throw new Error(`Failed to list users: ${contextError || error.message}. Ensure 'admin-list-users' Edge Function is deployed and your admin user has the correct role metadata.`);
+    const errorMessage = `Failed to list users: ${contextError || error.message}. Ensure 'admin-list-users' Edge Function is deployed, configured with environment variables, and your user has admin role.`;
+    throw new Error(errorMessage);
+  }
+
+  // The 'data' object from the function response is expected to have a 'users' property.
+  if (!data || !Array.isArray(data.users)) {
+    console.error('Invalid response from admin-list-users function:', data);
+    throw new Error("Received an invalid response from the user listing service.");
   }
   
-  // The edge function returns an object { users: [] }
-  return data?.users || [];
+  return data.users as AdminUser[];
 };
+
 
 // ** These functions still require Edge Functions **
 export const inviteUserAdmin = async (email: string, planId: string): Promise<{ user: AdminUser | null; error: string | null }> => {

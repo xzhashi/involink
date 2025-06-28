@@ -155,7 +155,7 @@ const MinimalistTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
 
       <footer className="text-center text-xs text-gray-500 mt-12 pt-6 border-t border-gray-200">
         <p>Thank you for your business!</p>
-         {userPlan === 'free' && (
+         {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-3 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

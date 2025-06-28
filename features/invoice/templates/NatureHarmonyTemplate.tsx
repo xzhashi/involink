@@ -154,7 +154,7 @@ const NatureHarmonyTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
 
       <footer className="text-center text-xs text-emerald-500 mt-12 pt-6 border-t border-emerald-300">
         <p>Thank you for choosing {invoice.sender.name || "our services"}!</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>

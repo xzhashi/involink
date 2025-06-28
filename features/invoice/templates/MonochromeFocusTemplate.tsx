@@ -160,7 +160,7 @@ const MonochromeFocusTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
 
       <footer className="text-center text-xs text-gray-500 mt-12 pt-6 border-t border-gray-200 print:border-gray-300 print:text-black">
         <p>Thank you for your business.</p>
-        {userPlan === 'free' && (
+        {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>
