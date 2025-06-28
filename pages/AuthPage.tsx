@@ -1,0 +1,125 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import Input from '../components/common/Input';
+import Button from '../components/common/Button';
+import { SparklesIcon } from '../components/icons/SparklesIcon';
+
+const AuthPage: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true); // Toggle between Login and Signup
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [loadingUi, setLoadingUi] = useState(false); // Renamed to avoid conflict with auth.loading
+  const { login, signup, user, loading: authLoading } = useAuth(); // Use authLoading
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = location.state?.from?.pathname || "/create"; // Redirect after login
+
+  React.useEffect(() => {
+    if (user && !authLoading) { // Ensure auth state is resolved before navigating
+      navigate(from, { replace: true });
+    }
+  }, [user, authLoading, navigate, from]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    setLoadingUi(true);
+
+    try {
+      if (isLogin) {
+        const response = await login(email, password);
+        if (response.error) throw response.error;
+        // Navigation is handled by useEffect after user state updates
+      } else {
+        const response = await signup(email, password);
+        if (response.error) throw response.error;
+
+        if (response.user && response.session) {
+           setMessage('Signup successful! Redirecting...');
+           // Navigation is handled by useEffect
+        } else if (response.user && !response.session) {
+            // Email confirmation required
+            setMessage('Signup successful! Please check your email to confirm your account.');
+        } else {
+            // This case might not occur if error is always thrown or user/session are always present on success.
+            // Keeping for robustness.
+            setMessage('Signup process initiated. Please follow any instructions provided.');
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+      if (err.data?.weak_password) {
+        setError(`Signup failed: ${err.message}. Your password is too weak.`);
+      }
+    } finally {
+      setLoadingUi(false);
+    }
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-2xl">
+        <div>
+          <SparklesIcon className="mx-auto h-12 w-auto text-primary-DEFAULT" />
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-neutral-darkest">
+            {isLogin ? 'Sign in to your account' : 'Create a new account'}
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {error && <p className="text-center text-sm text-red-600 bg-red-100 p-3 rounded-md">{error}</p>}
+          {message && <p className="text-center text-sm text-green-600 bg-green-100 p-3 rounded-md">{message}</p>}
+          
+          <Input
+            label="Email address"
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            disabled={loadingUi || authLoading}
+          />
+          <Input
+            label="Password"
+            id="password"
+            name="password"
+            type="password"
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            disabled={loadingUi || authLoading}
+          />
+          <div>
+            <Button type="submit" className="w-full" disabled={loadingUi || authLoading}>
+              {loadingUi ? (isLogin ? 'Signing in...' : 'Creating account...') : (isLogin ? 'Sign in' : 'Create account')}
+            </Button>
+          </div>
+        </form>
+        <div className="text-sm text-center">
+          <button
+            onClick={() => { 
+              setIsLogin(!isLogin); 
+              setError(null); 
+              setMessage(null);
+            }}
+            className="font-medium text-primary-DEFAULT hover:text-primary-dark"
+            disabled={loadingUi || authLoading}
+          >
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AuthPage;
