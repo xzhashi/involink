@@ -1,15 +1,15 @@
 
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
-import { PlanData } from '../types';
-import { useAuth } from './AuthContext';
-import { supabase } from '../services/supabaseClient';
+import { PlanData } from '../types.ts';
+import { useAuth } from './AuthContext.tsx';
+import { supabase } from '../services/supabaseClient.ts';
 import { 
   fetchAllPlansAdmin, 
   createPlanAdmin, 
   updatePlanAdmin, 
   deletePlanAdmin 
-} from '../services/adminService';
+} from '../services/adminService.ts';
 
 interface PlanContextType {
   // For Admin plan management

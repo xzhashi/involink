@@ -1,6 +1,7 @@
 
-import { AdminDashboardStats, AdminUser, PlanData } from '../types';
-import { supabase } from './supabaseClient'; 
+
+import { AdminDashboardStats, AdminUser, PlanData } from '../types.ts';
+import { supabase } from './supabaseClient.ts'; 
 
 // --- Helper to get start and end of current month for DB queries ---
 const getMonthDateRange = () => {
