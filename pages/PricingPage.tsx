@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Button from '../components/common/Button';
-import { CheckCircleIcon } from '../components/icons/CheckCircleIcon'; 
-import { usePlans } from '../contexts/PlanContext';
-import { useAuth } from '../contexts/AuthContext';
+import Button from '../components/common/Button.tsx';
+import { CheckCircleIcon } from '../components/icons/CheckCircleIcon.tsx'; 
+import { usePlans } from '../contexts/PlanContext.tsx';
+import { useAuth } from '../contexts/AuthContext.tsx';
 
 const PlanFeature: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <li className="flex items-center">

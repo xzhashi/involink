@@ -1,10 +1,11 @@
 
+
 import React, { useState } from 'react';
-import { InvoiceItem } from '../../types';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import { TrashIcon } from '../../components/icons/TrashIcon';
-import { SparklesIcon } from '../../components/icons/SparklesIcon';
+import { InvoiceItem } from '../../types.ts';
+import Input from '../../components/common/Input.tsx';
+import Button from '../../components/common/Button.tsx';
+import { TrashIcon } from '../../components/icons/TrashIcon.tsx';
+import { SparklesIcon } from '../../components/icons/SparklesIcon.tsx';
 
 interface InvoiceItemRowProps {
   item: InvoiceItem;

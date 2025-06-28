@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Input from '../components/common/Input';
-import Button from '../components/common/Button';
+import { useAuth } from '../contexts/AuthContext.tsx';
+import Input from '../components/common/Input.tsx';
+import Button from '../components/common/Button.tsx';
 
 const SettingsCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="bg-white p-6 rounded-lg shadow-md">

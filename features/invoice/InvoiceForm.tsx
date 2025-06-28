@@ -1,20 +1,21 @@
 
+
 import React, { useState, ChangeEvent } from 'react';
-import { InvoiceData, InvoiceItem } from '../../types';
-import Input from '../../components/common/Input';
-import Textarea from '../../components/common/Textarea';
-import Button from '../../components/common/Button';
-import InvoiceItemRow from './InvoiceItemRow';
-import { PlusIcon } from '../../components/icons/PlusIcon';
-import { SparklesIcon } from '../../components/icons/SparklesIcon';
-import Select from '../../components/common/Select';
-import { DEFAULT_CURRENCY } from '../../constants';
-import PaymentTools from './PaymentTools'; 
-import { ChevronDownIcon } from '../../components/icons/ChevronDownIcon'; 
-import { ChevronUpIcon } from '../../components/icons/ChevronUpIcon'; 
-import { UploadIcon } from '../../components/icons/UploadIcon'; 
-import { LinkIcon } from '../../components/icons/LinkIcon'; 
-import { PaletteIcon } from '../../components/icons/PaletteIcon'; // New Icon
+import { InvoiceData, InvoiceItem } from '../../types.ts';
+import Input from '../../components/common/Input.tsx';
+import Textarea from '../../components/common/Textarea.tsx';
+import Button from '../../components/common/Button.tsx';
+import InvoiceItemRow from './InvoiceItemRow.tsx';
+import { PlusIcon } from '../../components/icons/PlusIcon.tsx';
+import { SparklesIcon } from '../../components/icons/SparklesIcon.tsx';
+import Select from '../../components/common/Select.tsx';
+import { DEFAULT_CURRENCY } from '../../constants.ts';
+import PaymentTools from './PaymentTools.tsx'; 
+import { ChevronDownIcon } from '../../components/icons/ChevronDownIcon.tsx'; 
+import { ChevronUpIcon } from '../../components/icons/ChevronUpIcon.tsx'; 
+import { UploadIcon } from '../../components/icons/UploadIcon.tsx'; 
+import { LinkIcon } from '../../components/icons/LinkIcon.tsx'; 
+import { PaletteIcon } from '../../components/icons/PaletteIcon.tsx'; // New Icon
 
 
 interface InvoiceFormProps {

@@ -1,24 +1,24 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
-import InvoiceForm from '../features/invoice/InvoiceForm';
-import InvoicePreview from '../features/invoice/InvoicePreview';
-import TemplateSwitcher from '../features/invoice/TemplateSwitcher';
-import { InvoiceData, InvoiceItem, CompanyDetails, PlanData } from '../types';
-import { INITIAL_INVOICE_STATE, AVAILABLE_TEMPLATES, DEFAULT_CURRENCY } from '../constants';
-import Button from '../components/common/Button';
-import { DownloadIcon } from '../components/icons/DownloadIcon';
-import { ShareIcon } from '../components/icons/ShareIcon';
-import { WhatsAppIcon } from '../components/icons/WhatsAppIcon';
-import { suggestItemDescriptions, suggestInvoiceNote } from '../services/geminiService';
-import { calculateInvoiceTotal } from '../utils';
-import { useAuth } from '../contexts/AuthContext';
-import { usePlans } from '../contexts/PlanContext'; // Import usePlans
-import { saveInvoiceToSupabase, fetchLatestInvoiceFromSupabase, fetchInvoiceByIdFromSupabase } from '../services/supabaseClient';
-import { XMarkIcon } from '../components/icons/XMarkIcon'; // For modal close
-import { PlusIcon } from '../components/icons/PlusIcon';
-import MobileActionsBar from '../components/MobileActionsBar'; // New: Mobile Actions
-import { PaletteIcon } from '../components/icons/PaletteIcon'; // New: Palette Icon
-import { SparklesIcon } from '../components/icons/SparklesIcon';
+import InvoiceForm from '../features/invoice/InvoiceForm.tsx';
+import InvoicePreview from '../features/invoice/InvoicePreview.tsx';
+import TemplateSwitcher from '../features/invoice/TemplateSwitcher.tsx';
+import { InvoiceData, InvoiceItem, CompanyDetails, PlanData } from '../types.ts';
+import { INITIAL_INVOICE_STATE, AVAILABLE_TEMPLATES, DEFAULT_CURRENCY } from '../constants.ts';
+import Button from '../components/common/Button.tsx';
+import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
+import { ShareIcon } from '../components/icons/ShareIcon.tsx';
+import { WhatsAppIcon } from '../components/icons/WhatsAppIcon.tsx';
+import { suggestItemDescriptions, suggestInvoiceNote } from '../services/geminiService.ts';
+import { calculateInvoiceTotal } from '../utils.ts';
+import { useAuth } from '../contexts/AuthContext.tsx';
+import { usePlans } from '../contexts/PlanContext.tsx'; // Import usePlans
+import { saveInvoiceToSupabase, fetchLatestInvoiceFromSupabase, fetchInvoiceByIdFromSupabase } from '../services/supabaseClient.ts';
+import { XMarkIcon } from '../components/icons/XMarkIcon.tsx'; // For modal close
+import { PlusIcon } from '../components/icons/PlusIcon.tsx';
+import MobileActionsBar from '../components/MobileActionsBar.tsx'; // New: Mobile Actions
+import { PaletteIcon } from '../components/icons/PaletteIcon.tsx'; // New: Palette Icon
+import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 
 const LimitReachedModal: React.FC<{ plan: PlanData | null, onClose: () => void }> = ({ plan, onClose }) => (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[80] no-print backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="limit-modal-title">

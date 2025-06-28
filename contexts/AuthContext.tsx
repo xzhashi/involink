@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import type { Session, User as SupabaseAuthUser, AuthError } from '@supabase/supabase-js';
-import { supabase } from '../services/supabaseClient';
-import type { User } from '../types'; // Import extended User type
+import { supabase } from '../services/supabaseClient.ts';
+import type { User } from '../types.ts'; // Import extended User type
 
 interface WeakPasswordDetails {
   reasons: string[];

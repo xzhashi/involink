@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Input from '../components/common/Input';
-import Button from '../components/common/Button';
-import { SparklesIcon } from '../components/icons/SparklesIcon';
+import { useAuth } from '../contexts/AuthContext.tsx';
+import Input from '../components/common/Input.tsx';
+import Button from '../components/common/Button.tsx';
+import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 
 const AuthPage: React.FC = () => {
   const [email, setEmail] = useState('');

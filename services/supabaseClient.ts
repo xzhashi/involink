@@ -1,6 +1,7 @@
 
+
 import { createClient } from '@supabase/supabase-js';
-import { InvoiceData, InvoiceDataJson } from '../types';
+import { InvoiceData, InvoiceDataJson } from '../types.ts';
 
 // These should be set in your environment variables
 // const supabaseUrl = process.env.SUPABASE_URL;
@@ -137,7 +138,7 @@ export const fetchInvoiceByIdFromSupabase = async (dbId: string, userId: string)
   return data ? fromSupabaseInvoiceFormat(data) : null;
 };
 
-// Example function to fetch all invoices for a user (you might want pagination for real app)
+// Example function to fetch all invoices for a user (you might want to pagination for real app)
 export const fetchUserInvoicesFromSupabase = async (userId: string): Promise<InvoiceData[]> => {
   const { data, error } = await supabase
     .from('invoices')

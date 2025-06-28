@@ -1,22 +1,22 @@
-import { InvoiceData, InvoiceTemplateInfo, InvoiceTemplateProps, PlanData } from './types'; // Ensure InvoiceData and InvoiceTemplateProps are imported
-import MinimalistTemplate from './features/invoice/templates/MinimalistTemplate';
-import ModernTemplate from './features/invoice/templates/ModernTemplate';
-import CreativeTemplate from './features/invoice/templates/CreativeTemplate';
-import CorporateTemplate from './features/invoice/templates/CorporateTemplate';
-import TechTemplate from './features/invoice/templates/TechTemplate';
-import ElegantTemplate from './features/invoice/templates/ElegantTemplate';
-import NatureHarmonyTemplate from './features/invoice/templates/NatureHarmonyTemplate';
-import GeometricPulseTemplate from './features/invoice/templates/GeometricPulseTemplate';
-import VintageScrollTemplate from './features/invoice/templates/VintageScrollTemplate';
-import CosmicFlowTemplate from './features/invoice/templates/CosmicFlowTemplate';
-import ArtDecoTemplate from './features/invoice/templates/ArtDecoTemplate';
-import RusticCharmTemplate from './features/invoice/templates/RusticCharmTemplate';
-import WatercolorWashTemplate from './features/invoice/templates/WatercolorWashTemplate';
-import MonochromeFocusTemplate from './features/invoice/templates/MonochromeFocusTemplate';
-import IndustrialGritTemplate from './features/invoice/templates/IndustrialGritTemplate';
-import BohemianDreamTemplate from './features/invoice/templates/BohemianDreamTemplate';
-import RetroPixelTemplate from './features/invoice/templates/RetroPixelTemplate';
-import LuxuryGoldTemplate from './features/invoice/templates/LuxuryGoldTemplate';
+import { InvoiceData, InvoiceTemplateInfo, InvoiceTemplateProps, PlanData } from './types.ts'; // Ensure InvoiceData and InvoiceTemplateProps are imported
+import MinimalistTemplate from './features/invoice/templates/MinimalistTemplate.tsx';
+import ModernTemplate from './features/invoice/templates/ModernTemplate.tsx';
+import CreativeTemplate from './features/invoice/templates/CreativeTemplate.tsx';
+import CorporateTemplate from './features/invoice/templates/CorporateTemplate.tsx';
+import TechTemplate from './features/invoice/templates/TechTemplate.tsx';
+import ElegantTemplate from './features/invoice/templates/ElegantTemplate.tsx';
+import NatureHarmonyTemplate from './features/invoice/templates/NatureHarmonyTemplate.tsx';
+import GeometricPulseTemplate from './features/invoice/templates/GeometricPulseTemplate.tsx';
+import VintageScrollTemplate from './features/invoice/templates/VintageScrollTemplate.tsx';
+import CosmicFlowTemplate from './features/invoice/templates/CosmicFlowTemplate.tsx';
+import ArtDecoTemplate from './features/invoice/templates/ArtDecoTemplate.tsx';
+import RusticCharmTemplate from './features/invoice/templates/RusticCharmTemplate.tsx';
+import WatercolorWashTemplate from './features/invoice/templates/WatercolorWashTemplate.tsx';
+import MonochromeFocusTemplate from './features/invoice/templates/MonochromeFocusTemplate.tsx';
+import IndustrialGritTemplate from './features/invoice/templates/IndustrialGritTemplate.tsx';
+import BohemianDreamTemplate from './features/invoice/templates/BohemianDreamTemplate.tsx';
+import RetroPixelTemplate from './features/invoice/templates/RetroPixelTemplate.tsx';
+import LuxuryGoldTemplate from './features/invoice/templates/LuxuryGoldTemplate.tsx';
 
 // ADMIN_EMAIL is no longer used for client-side admin role simulation. Role is checked via user_metadata.
 // export const ADMIN_EMAIL = 'admin@invoicemaker.linkfc.com'; 

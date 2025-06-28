@@ -1,21 +1,22 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
-import Button from '../common/Button';
-import Input from '../common/Input';
-import Select from '../common/Select';
-import { XMarkIcon } from '../icons/XMarkIcon';
-import { PlusIcon } from '../icons/PlusIcon';
-import { PencilIcon } from '../icons/PencilIcon';
-import { TrashIcon } from '../icons/TrashIcon';
-import { usePlans } from '../../contexts/PlanContext';
-import { AdminUser } from '../../types';
+import Button from '../common/Button.tsx';
+import Input from '../common/Input.tsx';
+import Select from '../common/Select.tsx';
+import { XMarkIcon } from '../icons/XMarkIcon.tsx';
+import { PlusIcon } from '../icons/PlusIcon.tsx';
+import { PencilIcon } from '../icons/PencilIcon.tsx';
+import { TrashIcon } from '../icons/TrashIcon.tsx';
+import { usePlans } from '../../contexts/PlanContext.tsx';
+import { AdminUser } from '../../types.ts';
 import { 
   fetchAllUsersAdmin, 
   inviteUserAdmin, 
   updateUserAdmin, 
   deleteUserAdmin 
-} from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext'; 
+} from '../../services/adminService.ts';
+import { useAuth } from '../../contexts/AuthContext.tsx'; 
 
 const AdminUsersView: React.FC = () => {
   const { plans: availablePlans, loading: plansLoading } = usePlans();

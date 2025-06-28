@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AdminDashboardStats } from '../../types';
-import { fetchAdminDashboardStats } from '../../services/adminService';
+import { AdminDashboardStats } from '../../types.ts';
+import { fetchAdminDashboardStats } from '../../services/adminService.ts';
 
 const AdminDashboardView: React.FC = () => {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);

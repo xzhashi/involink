@@ -1,10 +1,11 @@
 
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HomeIcon } from '../icons/HomeIcon'; // Placeholder, use appropriate icons
-import { UsersIcon } from '../icons/UsersIcon';
-import { ListBulletIcon } from '../icons/ListBulletIcon';
-import { CreditCardIcon } from '../icons/CreditCardIcon';
+import { HomeIcon } from '../icons/HomeIcon.tsx'; // Placeholder, use appropriate icons
+import { UsersIcon } from '../icons/UsersIcon.tsx';
+import { ListBulletIcon } from '../icons/ListBulletIcon.tsx';
+import { CreditCardIcon } from '../icons/CreditCardIcon.tsx';
 
 const AdminSidebar: React.FC = () => {
   const commonLinkClasses = "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-150";

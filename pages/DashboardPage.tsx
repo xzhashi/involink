@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Button from '../components/common/Button';
-import { useAuth } from '../contexts/AuthContext';
-import { usePlans } from '../contexts/PlanContext';
-import { EyeIcon } from '../components/icons/EyeIcon'; // Placeholder, can be used for "View Invoices"
-import { PlusIcon } from '../components/icons/PlusIcon';
+import Button from '../components/common/Button.tsx';
+import { useAuth } from '../contexts/AuthContext.tsx';
+import { usePlans } from '../contexts/PlanContext.tsx';
+import { EyeIcon } from '../components/icons/EyeIcon.tsx'; // Placeholder, can be used for "View Invoices"
+import { PlusIcon } from '../components/icons/PlusIcon.tsx';
 
 
 const DashboardPage: React.FC = () => {

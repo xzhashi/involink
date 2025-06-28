@@ -1,6 +1,7 @@
 
+
 import React from 'react';
-import Input from '../common/Input';
+import Input from '../common/Input.tsx';
 
 // Mock payment data
 const mockPayments = [
@@ -39,24 +40,22 @@ const AdminPaymentsView: React.FC = () => {
               {mockPayments.map(payment => (
                 <tr key={payment.id} className="bg-white border-b hover:bg-neutral-lightest">
                   <td className="px-6 py-4 font-medium text-neutral-darkest">{payment.id}</td>
-                  <td className="px-6 py-4">{/* Find user email from userId */}User ({payment.userId.substring(0,6)})</td>
+                  <td className="px-6 py-4">{payment.userId}</td>
                   <td className="px-6 py-4">{payment.plan}</td>
-                  <td className="px-6 py-4">{payment.currency} {payment.amount.toFixed(2)}</td>
+                  <td className="px-6 py-4">${payment.amount.toFixed(2)} {payment.currency}</td>
                   <td className="px-6 py-4">{payment.date}</td>
                   <td className="px-6 py-4">
-                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       payment.status === 'Succeeded' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
                       {payment.status}
                     </span>
                   </td>
-                  {/* <td className="px-6 py-4 text-xs">{payment.gatewayId}</td> */}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-neutral-DEFAULT mt-4">Payment list is illustrative. Full functionality requires payment gateway integration.</p>
       </div>
     </div>
   );

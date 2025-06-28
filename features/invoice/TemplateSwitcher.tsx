@@ -1,6 +1,7 @@
 
+
 import React from 'react';
-import { InvoiceTemplateInfo } from '../../types';
+import { InvoiceTemplateInfo } from '../../types.ts';
 
 interface TemplateSwitcherProps {
   templates: InvoiceTemplateInfo[];

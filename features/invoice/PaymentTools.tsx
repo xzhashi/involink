@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import { downloadDataUrl } from '../../utils'; // Assuming utils.ts is in the root or accessible path
-import { CopyIcon } from '../../components/icons/CopyIcon'; // Create this icon
-import { QrCodeIcon } from '../../components/icons/QrCodeIcon'; // Create this icon
-import { DownloadIcon } from '../../components/icons/DownloadIcon';
+import Input from '../../components/common/Input.tsx';
+import Button from '../../components/common/Button.tsx';
+import { downloadDataUrl } from '../../utils.ts'; // Assuming utils.ts is in the root or accessible path
+import { CopyIcon } from '../../components/icons/CopyIcon.tsx'; // Create this icon
+import { QrCodeIcon } from '../../components/icons/QrCodeIcon.tsx'; // Create this icon
+import { DownloadIcon } from '../../components/icons/DownloadIcon.tsx';
 
 interface PaymentToolsProps {
   invoiceTotal: number;

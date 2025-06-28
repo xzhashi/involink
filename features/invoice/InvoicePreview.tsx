@@ -1,6 +1,6 @@
 import React from 'react';
-import { InvoiceData, InvoiceTemplateProps, PlanData } from '../../types';
-import { AVAILABLE_TEMPLATES } from '../../constants';
+import { InvoiceData, InvoiceTemplateProps, PlanData } from '../../types.ts';
+import { AVAILABLE_TEMPLATES } from '../../constants.ts';
 
 interface InvoicePreviewProps {
   invoice: InvoiceData;

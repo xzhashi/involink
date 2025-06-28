@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { usePlans } from '../contexts/PlanContext';
-import { fetchUserInvoicesFromSupabase, deleteInvoiceFromSupabase } from '../services/supabaseClient';
-import { InvoiceData } from '../types';
-import Button from '../components/common/Button';
-import { PlusIcon } from '../components/icons/PlusIcon';
-import { PencilIcon } from '../components/icons/PencilIcon'; 
-import { TrashIcon } from '../components/icons/TrashIcon';
-import { XMarkIcon } from '../components/icons/XMarkIcon';
-import { DEFAULT_CURRENCY } from '../constants';
+import { useAuth } from '../contexts/AuthContext.tsx';
+import { usePlans } from '../contexts/PlanContext.tsx';
+import { fetchUserInvoicesFromSupabase, deleteInvoiceFromSupabase } from '../services/supabaseClient.ts';
+import { InvoiceData } from '../types.ts';
+import Button from '../components/common/Button.tsx';
+import { PlusIcon } from '../components/icons/PlusIcon.tsx';
+import { PencilIcon } from '../components/icons/PencilIcon.tsx'; 
+import { TrashIcon } from '../components/icons/TrashIcon.tsx';
+import { XMarkIcon } from '../components/icons/XMarkIcon.tsx';
+import { DEFAULT_CURRENCY } from '../constants.ts';
 
 const UserInvoicesPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();

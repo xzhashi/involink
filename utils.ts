@@ -1,4 +1,4 @@
-import { InvoiceData } from './types';
+import { InvoiceData } from './types.ts';
 
 export const calculateInvoiceTotal = (invoice: InvoiceData): number => {
   const subtotal = invoice.items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);

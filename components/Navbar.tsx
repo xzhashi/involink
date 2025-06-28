@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { usePlans } from '../contexts/PlanContext';
-import { SparklesIcon } from './icons/SparklesIcon';
-import Button from './common/Button';
-import { UserCircleIcon } from './icons/UserCircleIcon'; 
-import { LogoutIcon } from './icons/LogoutIcon'; 
-import { ChevronDownIcon } from './icons/ChevronDownIcon'; // For dropdown
-import { CogIcon } from './icons/CogIcon'; // For Admin link
+import { useAuth } from '../contexts/AuthContext.tsx';
+import { usePlans } from '../contexts/PlanContext.tsx';
+import { SparklesIcon } from './icons/SparklesIcon.tsx';
+import Button from './common/Button.tsx';
+import { UserCircleIcon } from './icons/UserCircleIcon.tsx'; 
+import { LogoutIcon } from './icons/LogoutIcon.tsx'; 
+import { ChevronDownIcon } from './icons/ChevronDownIcon.tsx'; // For dropdown
+import { CogIcon } from './icons/CogIcon.tsx'; // For Admin link
 
 const Navbar: React.FC = () => {
   const { user, logout, loading, isAdmin } = useAuth(); // Added isAdmin

@@ -1,16 +1,17 @@
 
 
+
 import React, { useState, useEffect } from 'react';
-import Button from '../common/Button';
-import Input from '../common/Input';
-import Textarea from '../common/Textarea';
-import { PlanData } from '../../types';
-import { usePlans } from '../../contexts/PlanContext'; 
-import { XMarkIcon } from '../icons/XMarkIcon';
-import { PlusIcon } from '../icons/PlusIcon';
-import { PencilIcon } from '../icons/PencilIcon';
-import { TrashIcon } from '../icons/TrashIcon';
-import Select from '../common/Select';
+import Button from '../common/Button.tsx';
+import Input from '../common/Input.tsx';
+import Textarea from '../common/Textarea.tsx';
+import { PlanData } from '../../types.ts';
+import { usePlans } from '../../contexts/PlanContext.tsx'; 
+import { XMarkIcon } from '../icons/XMarkIcon.tsx';
+import { PlusIcon } from '../icons/PlusIcon.tsx';
+import { PencilIcon } from '../icons/PencilIcon.tsx';
+import { TrashIcon } from '../icons/TrashIcon.tsx';
+import Select from '../common/Select.tsx';
 
 const AdminPlansView: React.FC = () => {
   const { 

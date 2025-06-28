@@ -1,22 +1,23 @@
 
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import CreateInvoicePage from './pages/CreateInvoicePage';
-import AuthPage from './pages/AuthPage'; 
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { PlanProvider } from './contexts/PlanContext'; // New: Import PlanProvider
-import UserInvoicesPage from './pages/UserInvoicesPage'; 
-import DashboardPage from './pages/DashboardPage'; 
-import SettingsPage from './pages/SettingsPage';   
-import PricingPage from './pages/PricingPage';     
-import AdminPageLayout from './pages/AdminPageLayout'; 
-import AdminDashboardView from './components/admin/AdminDashboardView';
-import AdminUsersView from './components/admin/AdminUsersView';
-import AdminPlansView from './components/admin/AdminPlansView';
-import AdminPaymentsView from './components/admin/AdminPaymentsView';
+import HomePage from './pages/HomePage.tsx';
+import CreateInvoicePage from './pages/CreateInvoicePage.tsx';
+import AuthPage from './pages/AuthPage.tsx'; 
+import Navbar from './components/Navbar.tsx';
+import Footer from './components/Footer.tsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
+import { PlanProvider } from './contexts/PlanContext.tsx'; // New: Import PlanProvider
+import UserInvoicesPage from './pages/UserInvoicesPage.tsx'; 
+import DashboardPage from './pages/DashboardPage.tsx'; 
+import SettingsPage from './pages/SettingsPage.tsx';   
+import PricingPage from './pages/PricingPage.tsx';     
+import AdminPageLayout from './pages/AdminPageLayout.tsx'; 
+import AdminDashboardView from './components/admin/AdminDashboardView.tsx';
+import AdminUsersView from './components/admin/AdminUsersView.tsx';
+import AdminPlansView from './components/admin/AdminPlansView.tsx';
+import AdminPaymentsView from './components/admin/AdminPaymentsView.tsx';
 
 
 // ProtectedRoute component

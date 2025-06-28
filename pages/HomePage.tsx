@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Button from '../components/common/Button';
-import { SparklesIcon } from '../components/icons/SparklesIcon';
-import { AVAILABLE_TEMPLATES } from '../constants';
-import { DownloadIcon } from '../components/icons/DownloadIcon';
-import { ArrowRightIcon } from '../components/icons/ArrowRightIcon'; // New icon for CTA
-import { AbstractHeroPattern } from '../components/icons/AbstractHeroPattern'; // New SVG background
-import { ChevronDownIcon } from '../components/icons/ChevronDownIcon';
-import { ChevronUpIcon } from '../components/icons/ChevronUpIcon';
+import Button from '../components/common/Button.tsx';
+import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
+import { AVAILABLE_TEMPLATES } from '../constants.ts';
+import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
+import { ArrowRightIcon } from '../components/icons/ArrowRightIcon.tsx'; // New icon for CTA
+import { AbstractHeroPattern } from '../components/icons/AbstractHeroPattern.tsx'; // New SVG background
+import { ChevronDownIcon } from '../components/icons/ChevronDownIcon.tsx';
+import { ChevronUpIcon } from '../components/icons/ChevronUpIcon.tsx';
 
 // Using a generic document/template icon for "Beautiful Templates"
 const TemplateIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
