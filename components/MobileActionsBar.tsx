@@ -1,6 +1,6 @@
 
 import React from 'react';
-import Button from './common/Button';
+import Button from './common/Button.tsx';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { ShareIcon } from './icons/ShareIcon';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
