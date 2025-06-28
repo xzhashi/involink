@@ -1,10 +1,10 @@
 
 import React from 'react';
 import Button from './common/Button.tsx';
-import { DownloadIcon } from './icons/DownloadIcon';
-import { ShareIcon } from './icons/ShareIcon';
-import { WhatsAppIcon } from './icons/WhatsAppIcon';
-import { PlusIcon } from './icons/PlusIcon';
+import { DownloadIcon } from './icons/DownloadIcon.tsx';
+import { ShareIcon } from './icons/ShareIcon.tsx';
+import { WhatsAppIcon } from './icons/WhatsAppIcon.tsx';
+import { PlusIcon } from './icons/PlusIcon.tsx';
 
 interface MobileActionsBarProps {
   onDownload: () => void;
