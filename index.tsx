@@ -1,7 +1,6 @@
-import React from "react";
-import ReactDOM from "react-dom/client"; // The trailing slash is important here
-import { BrowserRouter } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

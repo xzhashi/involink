@@ -1,5 +1,5 @@
 {
-  "name": "3-invoice-maker-by-linkfc---online-invoice-maker",
+  "name": "copy-of-invoice-maker-by-linkfc---online-invoice-maker",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,13 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.2",
-    "@tailwindcss/vite": "^4.1.11",
-    "qrcode": "^1.5.4",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.2",
-    "tailwindcss": "^4.1.11"
+    "react-dom/client": "^19.1.0",
+    "react-router-dom": "^7.6.2?target=es2022",
+    "qrcode": "^1.5.4?target=es2022",
+    "@supabase/supabase-js": "^2.50.2?target=es2022",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
