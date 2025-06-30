@@ -19,26 +19,27 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, upiLink, qrCod
 
   const TemplateComponent = selectedTemplateInfo.component;
 
-  // Determine the effective logo URL
-  // If temporaryLogoUrl is a string (user uploaded/pasted new), use it.
-  // If temporaryLogoUrl is null (user cleared custom logo), fall back to invoice.sender.logoUrl (default from settings).
-  // If both are null/undefined, effectiveLogoUrl will be undefined.
   const effectiveLogoUrl = temporaryLogoUrl ?? invoice.sender.logoUrl;
 
-  // Create a modified invoice object for the template, ensuring sender details are robust
   const invoiceForTemplate: InvoiceData = {
     ...invoice,
     sender: {
-      ...invoice.sender, // invoice.sender is CompanyDetails, guaranteed to have name, address.
-      logoUrl: effectiveLogoUrl, // effectiveLogoUrl is string | undefined, matching CompanyDetails.logoUrl
+      ...invoice.sender,
+      logoUrl: effectiveLogoUrl,
     },
   };
+  
+  // For public views, userPlan will be null. We create a mock plan object
+  // from the `has_branding` flag saved on the invoice itself.
+  const effectivePlan = userPlan ?? (invoice.has_branding !== undefined 
+    ? { has_branding: invoice.has_branding } as PlanData 
+    : null);
   
   const templateProps: InvoiceTemplateProps = {
     invoice: invoiceForTemplate,
     upiLink,
     qrCodeDataUrl,
-    userPlan, // Pass userPlan to the template
+    userPlan: effectivePlan, // Pass effective plan to the template
   };
 
   return (

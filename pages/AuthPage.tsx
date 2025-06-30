@@ -27,6 +27,15 @@ const AuthPage: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('mode') === 'signup') {
+      setIsLogin(false);
+    } else {
+      setIsLogin(true);
+    }
+  }, [location.search]);
+
   React.useEffect(() => {
     if (user && !authLoading) { // Ensure auth state is resolved before navigating
       navigate(from, { replace: true });
@@ -41,8 +50,8 @@ const AuthPage: React.FC = () => {
 
     try {
       if (isLogin) {
-        const response = await login(email, password);
-        if (response.error) throw response.error;
+        const { error } = await login(email, password);
+        if (error) throw error;
         if (rememberMe) {
           localStorage.setItem('rememberedEmail', email);
         } else {
@@ -50,26 +59,21 @@ const AuthPage: React.FC = () => {
         }
         // Navigation is handled by useEffect after user state updates
       } else {
-        const response = await signup(email, password);
-        if (response.error) throw response.error;
+        const { data, error } = await signup(email, password);
+        if (error) throw error;
 
-        if (response.user && response.session) {
-           setMessage('Signup successful! Redirecting...');
-           // Navigation is handled by useEffect
-        } else if (response.user && !response.session) {
+        if (data.user && !data.session) {
             // Email confirmation required
             setMessage('Signup successful! Please check your email to confirm your account.');
+        } else if (data.user && data.session) {
+           setMessage('Signup successful! Redirecting...');
+           // Navigation is handled by useEffect
         } else {
-            // This case might not occur if error is always thrown or user/session are always present on success.
-            // Keeping for robustness.
             setMessage('Signup process initiated. Please follow any instructions provided.');
         }
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
-      if (err.data?.weak_password) {
-        setError(`Signup failed: ${err.message}. Your password is too weak.`);
-      }
     } finally {
       setLoadingUi(false);
     }

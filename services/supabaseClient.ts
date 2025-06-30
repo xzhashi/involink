@@ -18,7 +18,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Database functions for invoices
 
 // Converts client-side InvoiceData to what's stored in Supabase
-// (separating invoice_number and putting the rest into invoice_data_json)
 const toSupabaseInvoiceFormat = (invoice: InvoiceData): { invoice_number: string; user_id?: string; invoice_data_json: InvoiceDataJson } => {
   const { db_id, user_id, id, ...jsonData } = invoice;
   return {
@@ -36,7 +35,8 @@ const toSupabaseInvoiceFormat = (invoice: InvoiceData): { invoice_number: string
       discount: jsonData.discount,
       currency: jsonData.currency,
       selectedTemplateId: jsonData.selectedTemplateId,
-      manualPaymentLink: jsonData.manualPaymentLink, // Ensure this is included
+      manualPaymentLink: jsonData.manualPaymentLink,
+      has_branding: jsonData.has_branding,
     }
   };
 };
@@ -59,7 +59,8 @@ const fromSupabaseInvoiceFormat = (row: any): InvoiceData => {
     discount: jsonData.discount || { type: 'percentage', value: 0 },
     currency: jsonData.currency || 'USD',
     selectedTemplateId: jsonData.selectedTemplateId || 'modern',
-    manualPaymentLink: jsonData.manualPaymentLink || '', // Ensure this is included
+    manualPaymentLink: jsonData.manualPaymentLink || '',
+    has_branding: jsonData.has_branding === undefined ? true : jsonData.has_branding,
   };
 };
 
@@ -116,6 +117,20 @@ export const fetchInvoiceByIdFromSupabase = async (dbId: string, userId: string)
     .select('*')
     .eq('id', dbId)
     .eq('user_id', userId) // Ensure user owns the invoice
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null; // Not found
+    throw error;
+  }
+  return data ? fromSupabaseInvoiceFormat(data) : null;
+};
+
+export const fetchPublicInvoiceByIdFromSupabase = async (dbId: string): Promise<InvoiceData | null> => {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('id', dbId)
     .single();
 
   if (error) {

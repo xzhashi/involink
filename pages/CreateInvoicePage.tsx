@@ -100,7 +100,7 @@ const CreateInvoicePage: React.FC = () => {
 
   const [invoice, setInvoice] = useState<InvoiceData>(() => ({...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`}));
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local_saved'>('idle');
-  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared' | 'error' | 'not_supported'>('idle');
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared' | 'error' | 'not_supported' | 'save_first'>('idle');
   const [pageLoading, setPageLoading] = useState(true);
   const [isNewInvoice, setIsNewInvoice] = useState(true);
   const [generatedUpiLink, setGeneratedUpiLink] = useState<string | undefined>(undefined);
@@ -165,6 +165,7 @@ const CreateInvoicePage: React.FC = () => {
     fullBaseInvoice.notes = typeof fullBaseInvoice.notes === 'string' ? fullBaseInvoice.notes : '';
     fullBaseInvoice.terms = typeof fullBaseInvoice.terms === 'string' ? fullBaseInvoice.terms : '';
     fullBaseInvoice.manualPaymentLink = typeof fullBaseInvoice.manualPaymentLink === 'string' ? fullBaseInvoice.manualPaymentLink : '';
+    fullBaseInvoice.has_branding = typeof fullBaseInvoice.has_branding === 'boolean' ? fullBaseInvoice.has_branding : true;
 
 
     return fullBaseInvoice;
@@ -260,8 +261,13 @@ const CreateInvoicePage: React.FC = () => {
     const autoSave = async () => {
       setSaveStatus('saving');
       try {
-        if (user && invoice.user_id === user.id) { 
-          const savedData = await saveInvoiceToSupabase(invoice);
+        const invoiceWithBranding = {
+          ...invoice,
+          has_branding: currentUserPlan?.has_branding ?? true,
+        };
+
+        if (user && invoiceWithBranding.user_id === user.id) { 
+          const savedData = await saveInvoiceToSupabase(invoiceWithBranding);
           if (savedData) {
             if (savedData.db_id && savedData.db_id !== invoice.db_id) {
                setInvoice(prev => ({...prev, db_id: savedData.db_id}));
@@ -274,10 +280,10 @@ const CreateInvoicePage: React.FC = () => {
             setSaveStatus('error');  
           }
         } else if (!user) { 
-          localStorage.setItem('currentInvoice', JSON.stringify(invoice));
+          localStorage.setItem('currentInvoice', JSON.stringify(invoiceWithBranding));
           setSaveStatus('local_saved');
         } else {
-          localStorage.setItem('currentInvoice', JSON.stringify(invoice));
+          localStorage.setItem('currentInvoice', JSON.stringify(invoiceWithBranding));
           setSaveStatus('local_saved');
         }
       } catch (e) {
@@ -301,7 +307,7 @@ const CreateInvoicePage: React.FC = () => {
         return () => clearTimeout(debounceTimer);
     }
 
-  }, [invoice, user, pageLoading, authLoading, navigate, invoiceDbId, isLimitReached]); 
+  }, [invoice, user, pageLoading, authLoading, navigate, invoiceDbId, isLimitReached, currentUserPlan]); 
   
   const handleInvoiceChange = useCallback(<K extends keyof InvoiceData>(key: K, value: InvoiceData[K]) => {
     setInvoice(prev => ({ ...prev, [key]: value }));
@@ -358,10 +364,19 @@ const CreateInvoicePage: React.FC = () => {
   };
   
   const invoiceTotal = useMemo(() => calculateInvoiceTotal(invoice), [invoice]);
+  
+  const getShareUrl = () => {
+    if (!invoice.db_id) return null;
+    return `${window.location.origin}/#/view/invoice/${invoice.db_id}`;
+  };
 
   const getInvoiceSummaryForShare = () => {
+    const shareUrl = getShareUrl();
+    if (!shareUrl) {
+      return "Please save the invoice first to get a shareable link.";
+    }
     let summary = `Invoice #${invoice.id} from ${invoice.sender.name || 'My Business'} for ${invoice.currency || DEFAULT_CURRENCY} ${invoiceTotal.toFixed(2)}.`;
-    summary += `\nView at: ${window.location.origin}${window.location.pathname}#${location.pathname.startsWith('/invoice/') ? location.pathname : `/invoice/${invoice.db_id || 'new'}`}`;
+    summary += `\nView at: ${shareUrl}`;
     if (generatedUpiLink) {
         summary += `\nPay via UPI: ${generatedUpiLink}`;
     }
@@ -372,11 +387,18 @@ const CreateInvoicePage: React.FC = () => {
   }
 
   const handleShareInvoiceLink = async () => {
+    const shareUrl = getShareUrl();
+    if (!shareUrl) {
+      setShareStatus('save_first');
+      setTimeout(() => setShareStatus('idle'), 3000);
+      return;
+    }
     setShareStatus('idle');
+
     const shareData = {
       title: `Invoice #${invoice.id} from ${invoice.sender.name || 'My Business'}`,
       text: getInvoiceSummaryForShare(),
-      url: `${window.location.origin}${window.location.pathname}#${location.pathname.startsWith('/invoice/') ? location.pathname : `/invoice/${invoice.db_id || 'new'}`}`, 
+      url: shareUrl, 
     };
 
     if (navigator.share) {
@@ -388,7 +410,7 @@ const CreateInvoicePage: React.FC = () => {
       }
     } else if (navigator.clipboard) {
       try {
-        await navigator.clipboard.writeText(shareData.text);
+        await navigator.clipboard.writeText(shareData.url);
         setShareStatus('copied');
       } catch (err) {
         setShareStatus('error');
@@ -400,23 +422,23 @@ const CreateInvoicePage: React.FC = () => {
   };
   
   const handleShareOnWhatsApp = () => {
+    const shareUrl = getShareUrl();
+    if (!shareUrl) {
+      setShareStatus('save_first');
+      setTimeout(() => setShareStatus('idle'), 3000);
+      return;
+    }
+    
     const recipientPhone = invoice.recipient.phone;
     if (!recipientPhone || recipientPhone.trim() === '') {
-      // Non-blocking notification is preferred over alert()
-      // e.g., show a toast message. For now, we'll just fail silently.
+      setShowWhatsAppOptionsModal(true); // Still show modal, but maybe with a note
       return;
     }
     setShowWhatsAppOptionsModal(true); 
   };
 
   const shareWhatsAppWithMessage = (messageType: 'link' | 'pdf_guide') => {
-    const recipientPhone = invoice.recipient.phone;
-    if (!recipientPhone || recipientPhone.trim() === '') {
-      setShowWhatsAppOptionsModal(false);
-      return;
-    }
-
-    let cleanedPhone = recipientPhone.replace(/[^\d+]/g, '');
+    const recipientPhone = invoice.recipient.phone?.replace(/[^\d+]/g, '') || '';
     
     let message = getInvoiceSummaryForShare();
 
@@ -424,7 +446,7 @@ const CreateInvoicePage: React.FC = () => {
       message += `\n\nTo view/share the PDF: open the link above, use the 'Download/Print PDF' button to save it, then attach the PDF file in WhatsApp.`;
     }
 
-    const whatsappUrl = `https://wa.me/${cleanedPhone}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/${recipientPhone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     setShowWhatsAppOptionsModal(false);
   };
@@ -474,7 +496,7 @@ const CreateInvoicePage: React.FC = () => {
     <>
       {showLimitModal && <LimitReachedModal plan={currentUserPlan} onClose={() => setShowLimitModal(false)}/>}
 
-      <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 pb-16 lg:pb-0"> {/* Added pb for mobile nav */}
+      <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 pb-20 lg:pb-0"> {/* Added pb for mobile nav */}
         <div className="lg:w-2/5 xl:w-1/3 no-print lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto thin-scrollbar p-1">
           <div className="space-y-6">
               {isSaveDisabled && (
@@ -546,6 +568,7 @@ const CreateInvoicePage: React.FC = () => {
                    { shareStatus === 'error' && <p className="text-xs text-red-500 mt-1 text-center">Could not share or copy. Please try again.</p>}
                    { shareStatus === 'copied' && <p className="text-xs text-green-600 mt-1 text-center">Invoice link copied to clipboard!</p>}
                    { shareStatus === 'shared' && <p className="text-xs text-green-600 mt-1 text-center">Invoice shared successfully!</p>}
+                   { shareStatus === 'save_first' && <p className="text-xs text-amber-600 mt-1 text-center">Invoice must be saved to generate a link.</p>}
                    <Button 
                       onClick={handleCreateNew} 
                       variant="ghost" 

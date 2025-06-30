@@ -1,6 +1,9 @@
 
 
 
+
+
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import HomePage from './pages/HomePage.tsx';
@@ -19,6 +22,9 @@ import AdminDashboardView from './components/admin/AdminDashboardView.tsx';
 import AdminUsersView from './components/admin/AdminUsersView.tsx';
 import AdminPlansView from './components/admin/AdminPlansView.tsx';
 import AdminPaymentsView from './components/admin/AdminPaymentsView.tsx';
+import PublicInvoicePage from './pages/PublicInvoicePage.tsx';
+import AboutUsPage from './pages/AboutUsPage.tsx';
+import ContactUsPage from './pages/ContactUsPage.tsx';
 
 const PageSkeleton: React.FC = () => {
   return (
@@ -72,6 +78,10 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
+           <Route path="/view/invoice/:invoiceDbId" element={<PublicInvoicePage />} />
+           <Route path="/pricing" element={<PricingPage />} />
+           <Route path="/about" element={<AboutUsPage />} />
+           <Route path="/contact" element={<ContactUsPage />} />
           <Route 
             path="/create" 
             element={
@@ -110,12 +120,6 @@ const AppContent: React.FC = () => {
               <ProtectedRoute>
                 <SettingsPage />
               </ProtectedRoute>
-            }
-          />
-          <Route 
-            path="/pricing"
-            element={ 
-                <PricingPage />
             }
           />
           {/* Admin Routes */}

@@ -1,19 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import type { Session, User as SupabaseAuthUser, AuthError } from '@supabase/supabase-js';
+import type { Session, User as SupabaseAuthUser, AuthResponse } from '@supabase/supabase-js';
 import { supabase } from '../services/supabaseClient.ts';
 import type { User } from '../types.ts'; // Import extended User type
-
-interface WeakPasswordDetails {
-  reasons: string[];
-  message: string;
-}
-
-interface LoginSignUpResponse {
-  user: SupabaseAuthUser | null; // Use SupabaseAuthUser here from Supabase lib
-  session: Session | null;
-  error: AuthError | null;
-  weakPassword?: WeakPasswordDetails | null;
-}
 
 interface AuthContextType {
   session: Session | null;
@@ -21,8 +9,8 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   userRole: 'admin' | 'user' | null;
-  login: (email: string, password_string: string) => Promise<LoginSignUpResponse>;
-  signup: (email: string, password_string: string) => Promise<LoginSignUpResponse>;
+  login: (email: string, password_string: string) => Promise<AuthResponse>;
+  signup: (email: string, password_string: string) => Promise<AuthResponse>;
   logout: () => Promise<void>;
 }
 
@@ -49,75 +37,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    let isMounted = true;
-
+    setLoading(true);
     const getSession = async () => {
-      if (isMounted) setLoading(true);
-      try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        if (error) {
-          // Error can be handled by a global error handler if needed
-        }
-        if (isMounted) {
-          setSession(currentSession);
-          updateUserRoleAndAdminStatus(currentSession?.user ?? null);
-        }
-      } catch (e) {
-        // Critical error, could be reported to a logging service
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        updateUserRoleAndAdminStatus(session?.user ?? null);
+        setLoading(false);
     };
-
     getSession();
 
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, currentSession) => {
-        if (isMounted) {
-          setSession(currentSession);
-          updateUserRoleAndAdminStatus(currentSession?.user ?? null);
-          if (_event !== 'INITIAL_SESSION') { // INITIAL_SESSION is handled by getSession
-             setLoading(false);
-          }
-        }
+      (_event, session) => {
+          setSession(session);
+          updateUserRoleAndAdminStatus(session?.user ?? null);
       }
     );
 
     return () => {
-      isMounted = false;
       authListener?.subscription.unsubscribe();
     };
   }, []);
 
-  const login = async (email: string, password_string: string): Promise<LoginSignUpResponse> => {
+  const login = async (email: string, password_string: string): Promise<AuthResponse> => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: password_string });
-    // User state, role, and isAdmin will be updated by onAuthStateChange
+    const response = await supabase.auth.signInWithPassword({ email, password: password_string });
     setLoading(false);
-    if (error) {
-      return { user: null, session: null, error, weakPassword: null };
-    }
-    return { user: data.user, session: data.session, error: null, weakPassword: null };
+    return response;
   };
 
-  const signup = async (email: string, password_string: string): Promise<LoginSignUpResponse> => {
+  const signup = async (email: string, password_string: string): Promise<AuthResponse> => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
+    const response = await supabase.auth.signUp({
       email,
       password: password_string,
-      // Default role is 'user', set by Edge function 'admin-invite-user' if invited
-      // or by default Supabase settings if public sign-up is enabled.
-      // If you want to set a default role here during public sign-up, it's typically done
-      // via a trigger on the auth.users table in Supabase to populate user_metadata.
     });
     setLoading(false);
-    if (error) {
-      const weakPasswordInfo = (error as any).data?.weak_password as WeakPasswordDetails | undefined;
-      return { user: null, session: null, error, weakPassword: weakPasswordInfo || null };
-    }
-    // If signup needs email confirmation, user and session might be non-null but session might not be active.
-    // onAuthStateChange will handle the final state after confirmation.
-    return { user: data.user, session: data.session, error: null, weakPassword: null };
+    return response;
   };
 
   const logout = async () => {

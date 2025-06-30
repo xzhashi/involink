@@ -43,6 +43,7 @@ export interface InvoiceData {
   currency: string;
   selectedTemplateId: string;
   manualPaymentLink?: string; // Added for custom payment links
+  has_branding?: boolean; // Added to store branding status with invoice
 }
 
 // This type represents how the invoice data (excluding db_id, user_id, id/invoice_number)
@@ -60,6 +61,7 @@ export interface InvoiceDataJson {
   currency: string;
   selectedTemplateId: string;
   manualPaymentLink?: string; // Added for custom payment links
+  has_branding?: boolean; // Added to store branding status with invoice
 }
 
 export interface InvoiceTemplateProps {

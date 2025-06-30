@@ -1,12 +1,17 @@
 body { font-family: 'Inter', sans-serif; }
 
 @media print {
-  body { 
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html, body {
     -webkit-print-color-adjust: exact; 
     print-color-adjust: exact; 
-    margin: 0;
-    padding: 0;
-   }
+    width: 210mm;
+    height: 297mm;
+    background: #fff !important;
+  }
   .no-print { display: none !important; }
   #invoice-preview-content {
     margin: 0 !important;
@@ -16,6 +21,8 @@ body { font-family: 'Inter', sans-serif; }
     border-radius: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    transform: scale(0.95); /* Scale to fit within potential browser margins */
+    transform-origin: top left;
   }
 }
 .thin-scrollbar::-webkit-scrollbar {

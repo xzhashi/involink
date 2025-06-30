@@ -183,7 +183,7 @@ const HomePage: React.FC = () => {
        </section>
 
        {/* FAQ Section */}
-       <section className="container mx-auto px-4">
+       <section id="faq" className="container mx-auto px-4">
            <h2 className="text-3xl sm:text-4xl font-bold text-center text-neutral-darkest mb-12">Frequently Asked Questions</h2>
            <div className="max-w-2xl mx-auto">
                 <FaqItem question="Is Invoice Maker really free?">
@@ -200,7 +200,8 @@ const HomePage: React.FC = () => {
 
       {/* Final CTA Section */}
        <section className="container mx-auto px-4">
-            <div className="relative text-center py-16 sm:py-20 bg-gradient-to-br from-primary-DEFAULT to-secondary-DEFAULT rounded-xl shadow-xl overflow-hidden">
+            <div className="relative text-center py-16 sm:py-20 bg-gradient-to-br from-slate-800 via-primary-dark to-slate-900 rounded-xl shadow-2xl overflow-hidden">
+                <AbstractHeroPattern className="absolute inset-0 w-full h-full object-cover opacity-[0.07] text-slate-500" />
                  <div className="relative z-10 text-white px-4">
                     <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Ready to Revolutionize Your Invoicing?</h2>
                     <p className="text-lg sm:text-xl mb-8 max-w-xl mx-auto opacity-90">Join thousands of professionals who are creating beautiful invoices in minutes.</p>
