@@ -10,11 +10,10 @@
   },
   "dependencies": {
     "react": "^19.1.0",
-    "react-dom/client": "^19.1.0",
+    "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2?target=es2022",
     "qrcode": "^1.5.4?target=es2022",
-    "@supabase/supabase-js": "^2.50.2?target=es2022",
-    "react-dom": "^19.1.0"
+    "@supabase/supabase-js": "^2.50.2?target=es2022"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
