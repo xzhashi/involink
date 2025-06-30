@@ -1,0 +1,21 @@
+{
+  "short_name": "Invoice Maker",
+  "name": "Invoice Maker by LinkFC",
+  "description": "Create professional invoices effortlessly with Invoice Maker by LinkFC. Featuring modern templates, UPI & QR payments, and easy sharing. Perfect for freelancers and small businesses. Get started free!",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#3B82F6",
+  "background_color": "#F8FAFC"
+}

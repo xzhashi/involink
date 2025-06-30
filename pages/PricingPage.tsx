@@ -24,7 +24,7 @@ const PricingPage: React.FC = () => {
 
   const handleChoosePlan = async (planId: string, amount: string, currency: string) => {
     if (!user) {
-        navigate('/auth?from=/pricing');
+        navigate('/auth?mode=login&from=/pricing'); // Redirect to login if not authenticated
         return;
     }
     
@@ -43,7 +43,7 @@ const PricingPage: React.FC = () => {
         const orderData = await createOrder(planId, parseFloat(amount), currency);
 
         if (!orderData || !orderData.id) {
-            throw new Error("Could not create payment order.");
+            throw new Error("Could not create payment order. Response from server was invalid.");
         }
 
         const options = {
@@ -51,12 +51,15 @@ const PricingPage: React.FC = () => {
             amount: orderData.amount,
             currency: orderData.currency,
             name: "Invoice Maker by LinkFC",
-            description: `Payment for ${orderData.notes.plan_name} Plan`,
+            description: `Payment for ${orderData.notes.plan_name || 'Selected Plan'}`,
             order_id: orderData.id,
             handler: async function (response: any) {
-                // The verification should be done in the PlanContext or a dedicated service
-                // For now, we assume verification happens and then we update the plan
-                await changePlanContext(planId);
+                // Verification is now handled in the PlanContext after a successful payment
+                await changePlanContext(planId, {
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                });
                 navigate('/dashboard'); // Redirect to a success page or dashboard
             },
             prefill: {
@@ -69,19 +72,26 @@ const PricingPage: React.FC = () => {
             },
             theme: {
                 color: "#3B82F6"
+            },
+            modal: {
+                ondismiss: function() {
+                    // This is called when the user closes the payment modal
+                    // We can reset the processing state here.
+                    setProcessingPlanId(null);
+                }
             }
         };
 
         const rzp = new Razorpay(options);
         rzp.on('payment.failed', function (response: any){
-            setPaymentError(`Payment failed: ${response.error.description}`);
+            setPaymentError(`Payment failed: ${response.error.description || 'An unknown error occurred.'}`);
+            setProcessingPlanId(null);
         });
 
         rzp.open();
 
     } catch (error: any) {
-        setPaymentError(error.message || "An unexpected error occurred during payment.");
-    } finally {
+        setPaymentError(error.message || "An unexpected error occurred during payment initiation. Please check the browser console for more details.");
         setProcessingPlanId(null);
     }
   };
@@ -120,7 +130,7 @@ const PricingPage: React.FC = () => {
         <p className="text-lg sm:text-xl text-neutral-DEFAULT max-w-2xl mx-auto">
           Choose the plan that best suits your invoicing needs. Paid plans remove branding and unlock unlimited invoices.
         </p>
-         {paymentError && <p className="text-sm text-red-500 bg-red-100 p-3 rounded-md mt-4 max-w-xl mx-auto">{paymentError}</p>}
+         {paymentError && <p className="text-sm text-red-500 bg-red-100 p-3 rounded-md mt-4 max-w-xl mx-auto whitespace-pre-wrap">{paymentError}</p>}
          <p className="text-sm text-accent-DEFAULT mt-2">(Payment processing via Razorpay is now live for INR transactions.)</p>
       </div>
 

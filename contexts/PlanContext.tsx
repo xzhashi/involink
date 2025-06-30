@@ -1,6 +1,3 @@
-
-
-
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { PlanData } from '../types.ts';
 import { useAuth } from './AuthContext.tsx';
@@ -11,6 +8,7 @@ import {
   updatePlanAdmin, 
   deletePlanAdmin 
 } from '../services/adminService.ts';
+import { verifyPayment } from '../services/razorpayService.ts';
 
 interface PlanContextType {
   // For Admin plan management
@@ -25,7 +23,7 @@ interface PlanContextType {
   // For current user's plan state
   currentUserPlan: PlanData | null;
   isLimitReached: boolean;
-  changePlan: (planId: string) => Promise<void>;
+  changePlan: (planId: string, paymentData?: any) => Promise<void>;
   processing: boolean;
 }
 
@@ -110,22 +108,35 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [user, currentUserPlan, authLoading]);
 
   // Function for a user to change their own plan
-  const changePlan = async (planId: string) => {
+  const changePlan = async (planId: string, paymentData?: any) => {
     if (!user) {
         setError("Cannot change plan, no user is logged in.");
         return;
     };
     setProcessing(true);
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: { planId: planId, status: 'Active' }
-    });
-    
-    if (updateError) {
-      setError(updateError.message);
+    setError(null);
+
+    try {
+      // If payment data is provided, verify it first.
+      if (paymentData) {
+        await verifyPayment({ ...paymentData, planId });
+      }
+
+      // If verification is successful (or not needed), update the user's plan
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { planId: planId, status: 'Active' }
+      });
+      
+      if (updateError) {
+        throw updateError;
+      }
+      // The onAuthStateChange listener in AuthContext will trigger a user update,
+      // which in turn will update currentUserPlan via the useEffect above.
+    } catch(err: any) {
+       setError(err.message || "An error occurred while updating your plan.");
+    } finally {
+       setProcessing(false);
     }
-    // The onAuthStateChange listener in AuthContext will trigger a user update,
-    // which in turn will update currentUserPlan via the useEffect above.
-    setProcessing(false);
   };
 
 
