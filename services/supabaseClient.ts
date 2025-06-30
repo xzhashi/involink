@@ -2,6 +2,8 @@
 
 
 
+
+
 import { createClient } from '@supabase/supabase-js';
 import { InvoiceData, InvoiceDataJson } from '../types.ts';
 
@@ -37,6 +39,8 @@ const toSupabaseInvoiceFormat = (invoice: InvoiceData): { invoice_number: string
       selectedTemplateId: jsonData.selectedTemplateId,
       manualPaymentLink: jsonData.manualPaymentLink,
       has_branding: jsonData.has_branding,
+      is_public: jsonData.is_public, // New field
+      upiId: jsonData.upiId, // New field
     }
   };
 };
@@ -61,6 +65,8 @@ const fromSupabaseInvoiceFormat = (row: any): InvoiceData => {
     selectedTemplateId: jsonData.selectedTemplateId || 'modern',
     manualPaymentLink: jsonData.manualPaymentLink || '',
     has_branding: jsonData.has_branding === undefined ? true : jsonData.has_branding,
+    is_public: jsonData.is_public || false, // New field
+    upiId: jsonData.upiId || '', // New field
   };
 };
 
@@ -127,6 +133,9 @@ export const fetchInvoiceByIdFromSupabase = async (dbId: string, userId: string)
 };
 
 export const fetchPublicInvoiceByIdFromSupabase = async (dbId: string): Promise<InvoiceData | null> => {
+    // This function assumes an RLS policy is in place on the 'invoices' table that allows public access.
+    // A recommended policy for the SELECT action would be:
+    // (is_public = true) OR (auth.uid() = user_id)
   const { data, error } = await supabase
     .from('invoices')
     .select('*')

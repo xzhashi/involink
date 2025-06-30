@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import Input from '../../components/common/Input.tsx';
 import Button from '../../components/common/Button.tsx';
-import { downloadDataUrl } from '../../utils.ts'; // Assuming utils.ts is in the root or accessible path
-import { CopyIcon } from '../../components/icons/CopyIcon.tsx'; // Create this icon
-import { QrCodeIcon } from '../../components/icons/QrCodeIcon.tsx'; // Create this icon
+import { downloadDataUrl, generateUpiDetails } from '../../utils.ts';
+import { CopyIcon } from '../../components/icons/CopyIcon.tsx'; 
+import { QrCodeIcon } from '../../components/icons/QrCodeIcon.tsx'; 
 import { DownloadIcon } from '../../components/icons/DownloadIcon.tsx';
 
 interface PaymentToolsProps {
@@ -12,7 +12,9 @@ interface PaymentToolsProps {
   invoiceId: string;
   defaultPayeeName: string;
   invoiceCurrency: string;
-  onUpiDetailsGenerated: (link: string, qrDataUrl: string) => void; // Callback prop
+  upiId: string; // Now a controlled component prop
+  onUpiIdChange: (upiId: string) => void; // Callback to update parent state
+  onUpiDetailsGenerated: (link: string, qrDataUrl: string) => void;
 }
 
 const PaymentTools: React.FC<PaymentToolsProps> = ({
@@ -20,9 +22,10 @@ const PaymentTools: React.FC<PaymentToolsProps> = ({
   invoiceId,
   defaultPayeeName,
   invoiceCurrency,
+  upiId,
+  onUpiIdChange,
   onUpiDetailsGenerated,
 }) => {
-  const [upiId, setUpiId] = useState('');
   const [payeeName, setPayeeName] = useState(defaultPayeeName);
   const [transactionNote, setTransactionNote] = useState(`Payment for Invoice #${invoiceId}`);
   const [generatedUpiLink, setGeneratedUpiLink] = useState('');
@@ -38,34 +41,14 @@ const PaymentTools: React.FC<PaymentToolsProps> = ({
   }, [invoiceId]);
 
   const handleGenerateUpiLink = async () => {
-    if (!upiId || invoiceTotal <= 0) {
+    const details = await generateUpiDetails(upiId, invoiceTotal, payeeName || defaultPayeeName, invoiceId, transactionNote);
+    if (details) {
+      setGeneratedUpiLink(details.upiLink);
+      setQrCodeDataUrl(details.qrCodeDataUrl);
+      onUpiDetailsGenerated(details.upiLink, details.qrCodeDataUrl);
+    } else {
       setGeneratedUpiLink('');
       setQrCodeDataUrl('');
-      // Optionally call onUpiDetailsGenerated with empty strings if needed by parent
-      // onUpiDetailsGenerated('', ''); 
-      return;
-    }
-
-    const params = new URLSearchParams({
-      pa: upiId, // Payee VPA
-      pn: payeeName || defaultPayeeName, // Payee Name
-      am: invoiceTotal.toFixed(2), // Amount
-      cu: 'INR', // Currency (Hardcoded to INR for UPI)
-      tr: invoiceId, // Transaction Reference (Invoice ID)
-      tn: transactionNote, // Transaction Note
-    });
-
-    const upiLink = `upi://pay?${params.toString()}`;
-    setGeneratedUpiLink(upiLink);
-
-    try {
-      const qrDataUrl = await QRCode.toDataURL(upiLink, { errorCorrectionLevel: 'M', width: 256 });
-      setQrCodeDataUrl(qrDataUrl);
-      onUpiDetailsGenerated(upiLink, qrDataUrl); // Call callback with generated details
-    } catch (err) {
-      setQrCodeDataUrl(''); // Clear QR on error
-      // Optionally call onUpiDetailsGenerated with link and empty QR string
-      // onUpiDetailsGenerated(upiLink, '');
     }
   };
 
@@ -92,7 +75,7 @@ const PaymentTools: React.FC<PaymentToolsProps> = ({
         label="Your UPI ID (e.g., yourname@bank)"
         id="upiId"
         value={upiId}
-        onChange={(e) => setUpiId(e.target.value)}
+        onChange={(e) => onUpiIdChange(e.target.value)}
         placeholder="yourvpa@oksbi"
       />
       <Input

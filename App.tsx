@@ -1,18 +1,13 @@
 
 
-
-
-
-
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage.tsx';
 import CreateInvoicePage from './pages/CreateInvoicePage.tsx';
 import AuthPage from './pages/AuthPage.tsx'; 
-import Navbar from './components/Navbar.tsx';
-import Footer from './components/Footer.tsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
-import { PlanProvider } from './contexts/PlanContext.tsx'; // New: Import PlanProvider
+import { PlanProvider } from './contexts/PlanContext.tsx';
+import { LocalizationProvider } from './contexts/LocalizationContext.tsx';
 import UserInvoicesPage from './pages/UserInvoicesPage.tsx'; 
 import DashboardPage from './pages/DashboardPage.tsx'; 
 import SettingsPage from './pages/SettingsPage.tsx';   
@@ -25,6 +20,7 @@ import AdminPaymentsView from './components/admin/AdminPaymentsView.tsx';
 import PublicInvoicePage from './pages/PublicInvoicePage.tsx';
 import AboutUsPage from './pages/AboutUsPage.tsx';
 import ContactUsPage from './pages/ContactUsPage.tsx';
+import MainLayout from './components/MainLayout.tsx';
 
 const PageSkeleton: React.FC = () => {
   return (
@@ -69,89 +65,83 @@ const AdminProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) 
   return children;
 };
 
-
-const AppContent: React.FC = () => {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/auth" element={<AuthPage />} />
-           <Route path="/view/invoice/:invoiceDbId" element={<PublicInvoicePage />} />
-           <Route path="/pricing" element={<PricingPage />} />
-           <Route path="/about" element={<AboutUsPage />} />
-           <Route path="/contact" element={<ContactUsPage />} />
-          <Route 
-            path="/create" 
-            element={
-              <ProtectedRoute>
-                <CreateInvoicePage />
-              </ProtectedRoute>
-            } 
-          />
-           <Route 
-            path="/invoice/:invoiceDbId" 
-            element={
-              <ProtectedRoute>
-                <CreateInvoicePage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/invoices"
-            element={
-              <ProtectedRoute>
-                <UserInvoicesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route 
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route 
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            }
-          />
-          {/* Admin Routes */}
-          <Route 
-            path="/admin"
-            element={
-              <AdminProtectedRoute>
-                <AdminPageLayout />
-              </AdminProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboardView />} />
-            <Route path="users" element={<AdminUsersView />} />
-            <Route path="plans" element={<AdminPlansView />} />
-            <Route path="payments" element={<AdminPaymentsView />} />
-          </Route>
-
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
-  );
-};
-
 const App: React.FC = () => {
   return (
     <HashRouter>
       <AuthProvider>
-        <PlanProvider> {/* New: Wrap with PlanProvider */}
-          <AppContent />
+        <PlanProvider>
+          <LocalizationProvider>
+           <Routes>
+              {/* Routes with standard Navbar and Footer */}
+              <Route element={<MainLayout />}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/about" element={<AboutUsPage />} />
+                  <Route path="/contact" element={<ContactUsPage />} />
+                  <Route 
+                    path="/invoices"
+                    element={
+                      <ProtectedRoute>
+                        <UserInvoicesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route 
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route 
+                    path="/settings"
+                    element={
+                      <ProtectedRoute>
+                        <SettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route 
+                    path="/admin"
+                    element={
+                      <AdminProtectedRoute>
+                        <AdminPageLayout />
+                      </AdminProtectedRoute>
+                    }
+                  >
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<AdminDashboardView />} />
+                    <Route path="users" element={<AdminUsersView />} />
+                    <Route path="plans" element={<AdminPlansView />} />
+                    <Route path="payments" element={<AdminPaymentsView />} />
+                  </Route>
+                  <Route 
+                    path="/create" 
+                    element={
+                      <ProtectedRoute>
+                        <CreateInvoicePage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                   <Route 
+                    path="/invoice/:invoiceDbId" 
+                    element={
+                      <ProtectedRoute>
+                        <CreateInvoicePage />
+                      </ProtectedRoute>
+                    } 
+                  />
+              </Route>
+              
+              {/* Standalone routes without the main layout */}
+              <Route path="/view/invoice/:invoiceDbId" element={<PublicInvoicePage />} />
+
+              {/* Fallback route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </LocalizationProvider>
         </PlanProvider>
       </AuthProvider>
     </HashRouter>

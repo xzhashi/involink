@@ -79,7 +79,9 @@ export const INITIAL_INVOICE_STATE: InvoiceData = {
   discount: { type: 'percentage' as 'percentage' | 'fixed', value: 0 },
   currency: DEFAULT_CURRENCY,
   selectedTemplateId: 'modern', 
-  manualPaymentLink: '', 
+  manualPaymentLink: '',
+  is_public: false,
+  upiId: '',
 };
 
 export const AVAILABLE_TEMPLATES: InvoiceTemplateInfo[] = [

@@ -11,6 +11,16 @@ const getMonthDateRange = () => {
   return { startOfMonth, endOfMonth };
 };
 
+const handleInvokeError = (error: any, context: string): Error => {
+  if (error.message.includes("Failed to fetch") || error.message.includes("network error")) {
+      return new Error(`A network error occurred while trying to ${context}. This is often a CORS issue. Please check the following in your Supabase project:
+1. Go to 'Edge Functions' -> select the function -> 'Settings' -> 'CORS headers' and ensure 'Access-Control-Allow-Origin' is set to '*' or your app's domain.
+2. If using a custom domain, verify that the 'SUPABASE_URL' environment variable for the function is set to your custom domain URL, not the default '.supabase.co' URL.`);
+  }
+  const contextError = (error as any).context?.message;
+  return new Error(`Failed to ${context}: ${contextError || error.message}.`);
+};
+
 
 // --- Admin Dashboard Stats ---
 export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> => {
@@ -58,16 +68,12 @@ export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> =
 // --- User Management ---
 
 export const fetchAllUsersAdmin = async (): Promise<AdminUser[]> => {
-  // Edge Function `admin-list-users`
   const { data, error } = await supabase.functions.invoke('admin-list-users');
   
   if (error) {
-    const contextError = (error as any).context?.message;
-    const errorMessage = `Failed to list users: ${contextError || error.message}. Ensure 'admin-list-users' Edge Function is deployed, configured with environment variables, and your user has admin role.`;
-    throw new Error(errorMessage);
+    throw handleInvokeError(error, "list users");
   }
 
-  // The 'data' object from the function response is expected to have a 'users' property.
   if (!data || !Array.isArray(data.users)) {
     throw new Error("Received an invalid response from the user listing service.");
   }
@@ -76,40 +82,33 @@ export const fetchAllUsersAdmin = async (): Promise<AdminUser[]> => {
 };
 
 
-// ** These functions still require Edge Functions **
 export const inviteUserAdmin = async (email: string, planId: string): Promise<{ user: AdminUser | null; error: string | null }> => {
-  // Edge Function `admin-invite-user`
   const { data, error } = await supabase.functions.invoke('admin-invite-user', {
     body: { email, planId }
   });
 
   if (error) {
-    const contextError = (error as any).context?.message;
-    return { user: null, error: `Failed to invite user: ${contextError || error.message}. Ensure 'admin-invite-user' Edge Function is deployed and configured in your self-hosted environment.` };
+    return { user: null, error: handleInvokeError(error, "invite user").message };
   }
   return { user: data?.user || null, error: data?.error || null };
 };
 
 export const updateUserAdmin = async (userId: string, updates: Partial<AdminUser['raw_user_meta_data']>) : Promise<{ user: AdminUser | null; error: string | null }> => {
-  // Edge Function `admin-update-user`
   const { data, error } = await supabase.functions.invoke('admin-update-user', {
     body: { userId, updates }
   });
   if (error) {
-    const contextError = (error as any).context?.message;
-    return { user: null, error: `Failed to update user: ${contextError || error.message}. Ensure 'admin-update-user' Edge Function is deployed.` };
+    return { user: null, error: handleInvokeError(error, "update user").message };
   }
   return { user: data?.user || null, error: data?.error || null };
 };
 
 export const deleteUserAdmin = async (userId: string): Promise<{ success: boolean; error: string | null }> => {
-  // Edge Function `admin-delete-user`
   const { data, error } = await supabase.functions.invoke('admin-delete-user', {
     body: { userId }
   });
    if (error) {
-    const contextError = (error as any).context?.message;
-    return { success: false, error: `Failed to delete user: ${contextError || error.message}. Ensure 'admin-delete-user' Edge Function is deployed.` };
+    return { success: false, error: handleInvokeError(error, "delete user").message };
   }
   return { success: data?.success || false, error: data?.error || null };
 };

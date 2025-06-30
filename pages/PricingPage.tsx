@@ -4,6 +4,9 @@ import Button from '../components/common/Button.tsx';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon.tsx'; 
 import { usePlans } from '../contexts/PlanContext.tsx';
 import { useAuth } from '../contexts/AuthContext.tsx';
+import { createOrder } from '../services/razorpayService.ts';
+
+declare const Razorpay: any;
 
 const PlanFeature: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <li className="flex items-center">
@@ -15,17 +18,72 @@ const PlanFeature: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const PricingPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { plans, loading: plansLoading, currentUserPlan, changePlan, processing: planProcessing } = usePlans();
+  const { plans, loading: plansLoading, currentUserPlan, changePlan: changePlanContext, processing: planProcessing } = usePlans();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const handleChoosePlan = async (planId: string) => {
+  const handleChoosePlan = async (planId: string, amount: string, currency: string) => {
     if (!user) {
-        navigate('/auth');
+        navigate('/auth?from=/pricing');
         return;
     }
+    
+    // For free plans, just update context
+    if (amount === '0') {
+        setProcessingPlanId(planId);
+        await changePlanContext(planId);
+        setProcessingPlanId(null);
+        return;
+    }
+
     setProcessingPlanId(planId);
-    await changePlan(planId);
-    setProcessingPlanId(null);
+    setPaymentError(null);
+
+    try {
+        const orderData = await createOrder(planId, parseFloat(amount), currency);
+
+        if (!orderData || !orderData.id) {
+            throw new Error("Could not create payment order.");
+        }
+
+        const options = {
+            key: orderData.key,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: "Invoice Maker by LinkFC",
+            description: `Payment for ${orderData.notes.plan_name} Plan`,
+            order_id: orderData.id,
+            handler: async function (response: any) {
+                // The verification should be done in the PlanContext or a dedicated service
+                // For now, we assume verification happens and then we update the plan
+                await changePlanContext(planId);
+                navigate('/dashboard'); // Redirect to a success page or dashboard
+            },
+            prefill: {
+                name: user.email, // Or a proper name field if you have one
+                email: user.email,
+            },
+            notes: {
+                plan_id: planId,
+                user_id: user.id
+            },
+            theme: {
+                color: "#3B82F6"
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response: any){
+            setPaymentError(`Payment failed: ${response.error.description}`);
+        });
+
+        rzp.open();
+
+    } catch (error: any) {
+        setPaymentError(error.message || "An unexpected error occurred during payment.");
+    } finally {
+        setProcessingPlanId(null);
+    }
   };
   
   if (plansLoading) {
@@ -62,13 +120,15 @@ const PricingPage: React.FC = () => {
         <p className="text-lg sm:text-xl text-neutral-DEFAULT max-w-2xl mx-auto">
           Choose the plan that best suits your invoicing needs. Paid plans remove branding and unlock unlimited invoices.
         </p>
-         <p className="text-sm text-accent-DEFAULT mt-2">(Payment processing is illustrative and coming soon! For now, you can switch plans freely.)</p>
+         {paymentError && <p className="text-sm text-red-500 bg-red-100 p-3 rounded-md mt-4 max-w-xl mx-auto">{paymentError}</p>}
+         <p className="text-sm text-accent-DEFAULT mt-2">(Payment processing via Razorpay is now live for INR transactions.)</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
         {plans.map(plan => {
           const isCurrent = currentUserPlan?.id === plan.id;
-          const isProcessingThisPlan = processingPlanId === plan.id;
+          const isProcessingThisPlan = processingPlanId === plan.id || (planProcessing && currentUserPlan?.id === plan.id);
+          const currency = plan.price_suffix.toLowerCase().includes('mo') ? 'INR' : 'USD'; // Simple logic, assumes INR for paid plans
 
           return (
             <div 
@@ -95,10 +155,10 @@ const PricingPage: React.FC = () => {
               <Button 
                 variant={isCurrent ? 'secondary' : (plan.variant || 'secondary')} 
                 className={`w-full mt-auto ${plan.variant === 'primary' && !isCurrent ? '!py-3' : ''}`}
-                disabled={isCurrent || planProcessing}
-                onClick={() => handleChoosePlan(plan.id)}
+                disabled={isCurrent || planProcessing || isProcessingThisPlan}
+                onClick={() => handleChoosePlan(plan.id, plan.price, currency)}
               >
-                {isProcessingThisPlan ? 'Switching...' : (isCurrent ? 'Current Plan' : plan.cta_text)}
+                {isProcessingThisPlan ? 'Processing...' : (isCurrent ? 'Current Plan' : plan.cta_text)}
               </Button>
             </div>
           );

@@ -11,7 +11,8 @@ import { ShareIcon } from '../components/icons/ShareIcon.tsx';
 import { WhatsAppIcon } from '../components/icons/WhatsAppIcon.tsx';
 import { calculateInvoiceTotal } from '../utils.ts';
 import { useAuth } from '../contexts/AuthContext.tsx';
-import { usePlans } from '../contexts/PlanContext.tsx'; // Import usePlans
+import { usePlans } from '../contexts/PlanContext.tsx'; 
+import { useLocalization } from '../contexts/LocalizationContext.tsx';
 import { saveInvoiceToSupabase, fetchLatestInvoiceFromSupabase, fetchInvoiceByIdFromSupabase } from '../services/supabaseClient.ts';
 import { XMarkIcon } from '../components/icons/XMarkIcon.tsx'; // For modal close
 import { PlusIcon } from '../components/icons/PlusIcon.tsx';
@@ -93,14 +94,24 @@ const LimitReachedModal: React.FC<{ plan: PlanData | null, onClose: () => void }
 const CreateInvoicePage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { isLimitReached, currentUserPlan } = usePlans();
+  const { currency: userCurrency, loading: currencyLoading } = useLocalization();
   const location = useLocation();
   const navigate = useNavigate();
   const { invoiceDbId } = useParams<{ invoiceDbId?: string }>();
   const initialTemplateIdFromState = location.state?.initialTemplateId as string | undefined;
 
-  const [invoice, setInvoice] = useState<InvoiceData>(() => ({...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`}));
+  const getNewInvoiceState = useCallback(() => {
+    const baseState = {...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`};
+    // Only override currency if it's loaded and different from the default
+    if (userCurrency && !currencyLoading) {
+        baseState.currency = userCurrency;
+    }
+    return baseState;
+  }, [userCurrency, currencyLoading]);
+
+  const [invoice, setInvoice] = useState<InvoiceData>(getNewInvoiceState());
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local_saved'>('idle');
-  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared' | 'error' | 'not_supported' | 'save_first'>('idle');
+  const [shareStatus, setShareStatus] = useState<'idle' | 'sharing' | 'copied' | 'shared' | 'error' | 'not_supported' | 'save_first'>('idle');
   const [pageLoading, setPageLoading] = useState(true);
   const [isNewInvoice, setIsNewInvoice] = useState(true);
   const [generatedUpiLink, setGeneratedUpiLink] = useState<string | undefined>(undefined);
@@ -111,6 +122,21 @@ const CreateInvoicePage: React.FC = () => {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
 
+  // Effect to manage body class for printing
+  useEffect(() => {
+    const beforePrintHandler = () => document.body.classList.add('printing');
+    const afterPrintHandler = () => document.body.classList.remove('printing');
+
+    window.addEventListener('beforeprint', beforePrintHandler);
+    window.addEventListener('afterprint', afterPrintHandler);
+
+    return () => {
+        window.removeEventListener('beforeprint', beforePrintHandler);
+        window.removeEventListener('afterprint', afterPrintHandler);
+        // Ensure class is removed if component unmounts during print preview
+        document.body.classList.remove('printing'); 
+    };
+  }, []);
 
   const sanitizeInvoiceData = useCallback((data: Partial<InvoiceData> | null, baseState: InvoiceData): InvoiceData => {
     let fullBaseInvoice: InvoiceData = data ? { ...baseState, ...data } : { ...baseState };
@@ -166,6 +192,8 @@ const CreateInvoicePage: React.FC = () => {
     fullBaseInvoice.terms = typeof fullBaseInvoice.terms === 'string' ? fullBaseInvoice.terms : '';
     fullBaseInvoice.manualPaymentLink = typeof fullBaseInvoice.manualPaymentLink === 'string' ? fullBaseInvoice.manualPaymentLink : '';
     fullBaseInvoice.has_branding = typeof fullBaseInvoice.has_branding === 'boolean' ? fullBaseInvoice.has_branding : true;
+    fullBaseInvoice.is_public = typeof fullBaseInvoice.is_public === 'boolean' ? fullBaseInvoice.is_public : false;
+    fullBaseInvoice.upiId = typeof fullBaseInvoice.upiId === 'string' ? fullBaseInvoice.upiId : '';
 
 
     return fullBaseInvoice;
@@ -216,8 +244,8 @@ const CreateInvoicePage: React.FC = () => {
         
         if (!isMounted) return;
 
-        setIsNewInvoice(invoiceDbId ? newInvoiceFlag : true); // If invoiceDbId is present, newInvoiceFlag determines. Else, it's new.
-        const baseState = {...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`};
+        setIsNewInvoice(invoiceDbId ? newInvoiceFlag : true);
+        const baseState = getNewInvoiceState();
         const finalInvoiceState = sanitizeInvoiceData(loadedInvoiceData, baseState);
         
         if (user && !finalInvoiceState.user_id) {
@@ -243,7 +271,7 @@ const CreateInvoicePage: React.FC = () => {
     return () => {
         isMounted = false;
     };
-  }, [user, authLoading, invoiceDbId, sanitizeInvoiceData, navigate, isLimitReached]);
+  }, [user, authLoading, invoiceDbId, sanitizeInvoiceData, navigate, isLimitReached, getNewInvoiceState]);
 
   useEffect(() => {
     if (pageLoading || authLoading) return; 
@@ -270,7 +298,7 @@ const CreateInvoicePage: React.FC = () => {
           const savedData = await saveInvoiceToSupabase(invoiceWithBranding);
           if (savedData) {
             if (savedData.db_id && savedData.db_id !== invoice.db_id) {
-               setInvoice(prev => ({...prev, db_id: savedData.db_id}));
+               setInvoice(prev => ({...prev, db_id: savedData.db_id, is_public: savedData.is_public}));
             }
             if (!invoiceDbId && savedData.db_id) { 
                 navigate(`/invoice/${savedData.db_id}`, { replace: true });
@@ -370,11 +398,45 @@ const CreateInvoicePage: React.FC = () => {
     return `${window.location.origin}/#/view/invoice/${invoice.db_id}`;
   };
 
-  const getInvoiceSummaryForShare = () => {
-    const shareUrl = getShareUrl();
-    if (!shareUrl) {
-      return "Please save the invoice first to get a shareable link.";
+  const makeInvoicePublicAndGetUrl = async (): Promise<string | null> => {
+    if (!user || !invoice.user_id) {
+        setShareStatus('save_first');
+        setTimeout(() => setShareStatus('idle'), 3000);
+        return null;
     }
+    
+    setShareStatus('sharing');
+    let publicInvoice = invoice;
+
+    // If invoice isn't public yet, update it
+    if (!invoice.is_public) {
+        try {
+            const updatedInvoiceData = await saveInvoiceToSupabase({ ...invoice, is_public: true });
+            if (!updatedInvoiceData) {
+                throw new Error("Failed to make invoice public.");
+            }
+            publicInvoice = updatedInvoiceData;
+            setInvoice(publicInvoice); // Update local state
+        } catch (error) {
+            setShareStatus('error');
+            setTimeout(() => setShareStatus('idle'), 3000);
+            return null;
+        }
+    }
+
+    if (!publicInvoice.db_id) {
+      setShareStatus('save_first');
+      setTimeout(() => setShareStatus('idle'), 3000);
+      return null;
+    }
+    
+    return `${window.location.origin}/#/view/invoice/${publicInvoice.db_id}`;
+  };
+
+
+  const getInvoiceSummaryForShare = (shareUrl: string) => {
+    if (!shareUrl) return "Please save the invoice first to get a shareable link.";
+
     let summary = `Invoice #${invoice.id} from ${invoice.sender.name || 'My Business'} for ${invoice.currency || DEFAULT_CURRENCY} ${invoiceTotal.toFixed(2)}.`;
     summary += `\nView at: ${shareUrl}`;
     if (generatedUpiLink) {
@@ -387,17 +449,14 @@ const CreateInvoicePage: React.FC = () => {
   }
 
   const handleShareInvoiceLink = async () => {
-    const shareUrl = getShareUrl();
-    if (!shareUrl) {
-      setShareStatus('save_first');
-      setTimeout(() => setShareStatus('idle'), 3000);
-      return;
-    }
+    const shareUrl = await makeInvoicePublicAndGetUrl();
+    if (!shareUrl) return;
+
     setShareStatus('idle');
 
     const shareData = {
       title: `Invoice #${invoice.id} from ${invoice.sender.name || 'My Business'}`,
-      text: getInvoiceSummaryForShare(),
+      text: getInvoiceSummaryForShare(shareUrl),
       url: shareUrl, 
     };
 
@@ -406,7 +465,10 @@ const CreateInvoicePage: React.FC = () => {
         await navigator.share(shareData);
         setShareStatus('shared');
       } catch (err) {
-        setShareStatus('error');
+        // Ignore user cancellation
+        if ((err as DOMException).name !== 'AbortError') {
+            setShareStatus('error');
+        }
       }
     } else if (navigator.clipboard) {
       try {
@@ -421,26 +483,25 @@ const CreateInvoicePage: React.FC = () => {
     setTimeout(() => setShareStatus('idle'), 3000); 
   };
   
-  const handleShareOnWhatsApp = () => {
-    const shareUrl = getShareUrl();
-    if (!shareUrl) {
-      setShareStatus('save_first');
-      setTimeout(() => setShareStatus('idle'), 3000);
-      return;
-    }
-    
+  const handleShareOnWhatsApp = async () => {
+    const shareUrl = await makeInvoicePublicAndGetUrl();
+     if (!shareUrl) return;
+
     const recipientPhone = invoice.recipient.phone;
     if (!recipientPhone || recipientPhone.trim() === '') {
-      setShowWhatsAppOptionsModal(true); // Still show modal, but maybe with a note
+      setShowWhatsAppOptionsModal(true); 
       return;
     }
     setShowWhatsAppOptionsModal(true); 
   };
 
   const shareWhatsAppWithMessage = (messageType: 'link' | 'pdf_guide') => {
+    const shareUrl = getShareUrl();
+    if (!shareUrl) return;
+
     const recipientPhone = invoice.recipient.phone?.replace(/[^\d+]/g, '') || '';
     
-    let message = getInvoiceSummaryForShare();
+    let message = getInvoiceSummaryForShare(shareUrl);
 
     if (messageType === 'pdf_guide') {
       message += `\n\nTo view/share the PDF: open the link above, use the 'Download/Print PDF' button to save it, then attach the PDF file in WhatsApp.`;
@@ -457,7 +518,7 @@ const CreateInvoicePage: React.FC = () => {
         setShowLimitModal(true);
         return;
     }
-    const newInvoiceState = sanitizeInvoiceData(null, {...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`});
+    const newInvoiceState = sanitizeInvoiceData(null, getNewInvoiceState());
     if(user) newInvoiceState.user_id = user.id;
     setInvoice(newInvoiceState);
     setIsNewInvoice(true);
@@ -491,6 +552,7 @@ const CreateInvoicePage: React.FC = () => {
   }
 
   const isSaveDisabled = isLimitReached && !invoice.db_id;
+  const isSharingDisabled = shareStatus === 'sharing';
 
   return (
     <>
@@ -550,8 +612,9 @@ const CreateInvoicePage: React.FC = () => {
                         className="w-full" 
                         leftIcon={<ShareIcon className="w-5 h-5"/>}
                         title="Share invoice"
+                        disabled={isSharingDisabled}
                       >
-                        Share Invoice
+                         {isSharingDisabled ? 'Preparing...' : 'Share Invoice'}
                       </Button>
                   </div>
                    <Button 
@@ -561,14 +624,15 @@ const CreateInvoicePage: React.FC = () => {
                       className="w-full !bg-gradient-to-r !from-green-500 !to-emerald-600 hover:!from-green-600 hover:!to-emerald-700 !focus:ring-green-500 mb-2"
                       leftIcon={<WhatsAppIcon className="w-5 h-5" />}
                       title="Share invoice via WhatsApp"
+                      disabled={isSharingDisabled}
                     >
-                      Share on WhatsApp
+                      {isSharingDisabled ? 'Preparing...' : 'Share on WhatsApp'}
                     </Button>
                    { shareStatus === 'not_supported' && <p className="text-xs text-neutral-DEFAULT mt-1 text-center">Native sharing not supported. Try copying link.</p>}
                    { shareStatus === 'error' && <p className="text-xs text-red-500 mt-1 text-center">Could not share or copy. Please try again.</p>}
                    { shareStatus === 'copied' && <p className="text-xs text-green-600 mt-1 text-center">Invoice link copied to clipboard!</p>}
                    { shareStatus === 'shared' && <p className="text-xs text-green-600 mt-1 text-center">Invoice shared successfully!</p>}
-                   { shareStatus === 'save_first' && <p className="text-xs text-amber-600 mt-1 text-center">Invoice must be saved to generate a link.</p>}
+                   { shareStatus === 'save_first' && <p className="text-xs text-amber-600 mt-1 text-center">Login required to get a shareable link.</p>}
                    <Button 
                       onClick={handleCreateNew} 
                       variant="ghost" 
@@ -647,8 +711,8 @@ const CreateInvoicePage: React.FC = () => {
               </button>
             </div>
             <div className="space-y-3">
-              <Button onClick={handleModalShareLink} variant="primary" className="w-full">
-                Share Link
+              <Button onClick={handleModalShareLink} variant="primary" className="w-full" disabled={isSharingDisabled}>
+                {isSharingDisabled ? 'Preparing...' : 'Share Link'}
               </Button>
               <Button onClick={handleModalSharePdf} variant="secondary" className="w-full">
                 Share as PDF (Print & Save)

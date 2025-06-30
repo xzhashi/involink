@@ -6,27 +6,15 @@ import InvoicePreview from '../features/invoice/InvoicePreview.tsx';
 import Button from '../components/common/Button.tsx';
 import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
+import { generateUpiDetails, calculateInvoiceTotal } from '../utils.ts';
 
 const PublicInvoicePage: React.FC = () => {
     const { invoiceDbId } = useParams<{ invoiceDbId: string }>();
     const [invoice, setInvoice] = useState<InvoiceData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        // This page should not have the main navbar/footer, so we hide them by adding a class to the body.
-        document.body.classList.add('bg-neutral-lightest');
-        const mainNavbar = document.querySelector('nav');
-        const mainFooter = document.querySelector('footer');
-        if (mainNavbar) mainNavbar.style.display = 'none';
-        if (mainFooter) mainFooter.style.display = 'none';
-        
-        return () => {
-            document.body.classList.remove('bg-neutral-lightest');
-            if (mainNavbar) mainNavbar.style.display = '';
-            if (mainFooter) mainFooter.style.display = '';
-        };
-    }, []);
+    const [upiLink, setUpiLink] = useState<string | undefined>();
+    const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | undefined>();
 
     useEffect(() => {
         if (!invoiceDbId) {
@@ -40,8 +28,21 @@ const PublicInvoicePage: React.FC = () => {
                 const data = await fetchPublicInvoiceByIdFromSupabase(invoiceDbId);
                 if (data) {
                     setInvoice(data);
+                    if (data.upiId && data.currency === 'INR') {
+                        const total = calculateInvoiceTotal(data);
+                        const upiDetails = await generateUpiDetails(
+                            data.upiId,
+                            total,
+                            data.sender.name,
+                            data.id
+                        );
+                        if (upiDetails) {
+                            setUpiLink(upiDetails.upiLink);
+                            setQrCodeDataUrl(upiDetails.qrCodeDataUrl);
+                        }
+                    }
                 } else {
-                    setError("Invoice not found or you do not have permission to view it.");
+                    setError("Invoice not found. This link may be invalid or the invoice hasn't been shared publicly.");
                 }
             } catch (err: any) {
                 setError("An error occurred while fetching the invoice.");
@@ -59,7 +60,7 @@ const PublicInvoicePage: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
+            <div className="flex justify-center items-center min-h-screen bg-neutral-lightest">
                 <div className="text-center">
                     <SparklesIcon className="w-12 h-12 text-primary-DEFAULT animate-spin mx-auto" />
                     <p className="mt-2 text-neutral-DEFAULT">Loading Invoice...</p>
@@ -70,7 +71,7 @@ const PublicInvoicePage: React.FC = () => {
 
     if (error) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
+            <div className="flex justify-center items-center min-h-screen bg-neutral-lightest">
                 <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-lg mx-4">
                     <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
                     <p className="text-neutral-dark">{error}</p>
@@ -83,7 +84,7 @@ const PublicInvoicePage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-neutral-lightest">
             <header className="bg-white shadow-md p-4 flex justify-between items-center no-print sticky top-0 z-10">
                 <Link to="/" className="flex items-center text-primary-dark hover:text-primary-DEFAULT transition-colors">
                     <SparklesIcon className="h-8 w-8 mr-2" />
@@ -94,7 +95,7 @@ const PublicInvoicePage: React.FC = () => {
                 </Button>
             </header>
             <main className="p-4 sm:p-8">
-                {invoice && <InvoicePreview invoice={invoice} />}
+                {invoice && <InvoicePreview invoice={invoice} upiLink={upiLink} qrCodeDataUrl={qrCodeDataUrl} />}
             </main>
              <footer className="text-center py-6 no-print">
                 <p className="text-sm text-neutral-DEFAULT">

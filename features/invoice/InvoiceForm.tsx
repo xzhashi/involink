@@ -14,7 +14,8 @@ import { ChevronDownIcon } from '../../components/icons/ChevronDownIcon.tsx';
 import { ChevronUpIcon } from '../../components/icons/ChevronUpIcon.tsx'; 
 import { UploadIcon } from '../../components/icons/UploadIcon.tsx'; 
 import { LinkIcon } from '../../components/icons/LinkIcon.tsx'; 
-import { PaletteIcon } from '../../components/icons/PaletteIcon.tsx'; // New Icon
+import { PaletteIcon } from '../../components/icons/PaletteIcon.tsx'; 
+import { CURRENCY_OPTIONS } from '../../currencies.ts';
 
 
 interface InvoiceFormProps {
@@ -138,15 +139,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             id="currency" 
             value={invoice.currency || DEFAULT_CURRENCY} 
             onChange={(e) => handleGenericChange(e, 'currency')}
-            options={[
-                { value: 'USD', label: 'USD - United States Dollar' },
-                { value: 'EUR', label: 'EUR - Euro' },
-                { value: 'GBP', label: 'GBP - British Pound' },
-                { value: 'JPY', label: 'JPY - Japanese Yen' },
-                { value: 'CAD', label: 'CAD - Canadian Dollar' },
-                { value: 'AUD', label: 'AUD - Australian Dollar' },
-                { value: 'INR', label: 'INR - Indian Rupee' },
-            ]}
+            options={CURRENCY_OPTIONS}
         />
       </SectionCard>
       
@@ -279,6 +272,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           invoiceId={invoice.id}
           defaultPayeeName={invoice.sender.name}
           invoiceCurrency={invoice.currency || DEFAULT_CURRENCY}
+          upiId={invoice.upiId || ''}
+          onUpiIdChange={(value) => onInvoiceChange('upiId', value)}
           onUpiDetailsGenerated={onUpiDetailsGenerated} 
         />
       </SectionCard>

@@ -12,7 +12,35 @@ body { font-family: 'Inter', sans-serif; }
     height: 297mm;
     background: #fff !important;
   }
+
+  /* Hide all elements by default when printing from the editor */
+  body.printing * {
+    visibility: hidden;
+  }
+
+  /* Make only the preview container and its children visible */
+  body.printing #invoice-preview-content, 
+  body.printing #invoice-preview-content * {
+    visibility: visible;
+  }
+  
+  /* Position the visible preview at the top-left of the print page */
+  body.printing #invoice-preview-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: scale(0.95);
+    transform-origin: top left;
+  }
+
   .no-print { display: none !important; }
+  
   #invoice-preview-content {
     margin: 0 !important;
     padding: 0 !important;

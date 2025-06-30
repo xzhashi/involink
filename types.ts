@@ -42,8 +42,10 @@ export interface InvoiceData {
   discount: { type: 'percentage' | 'fixed'; value: number };
   currency: string;
   selectedTemplateId: string;
-  manualPaymentLink?: string; // Added for custom payment links
-  has_branding?: boolean; // Added to store branding status with invoice
+  manualPaymentLink?: string; 
+  has_branding?: boolean; 
+  is_public?: boolean; // New: For public shareable links
+  upiId?: string; // New: To store the UPI ID for QR code generation
 }
 
 // This type represents how the invoice data (excluding db_id, user_id, id/invoice_number)
@@ -60,8 +62,10 @@ export interface InvoiceDataJson {
   discount: { type: 'percentage' | 'fixed'; value: number };
   currency: string;
   selectedTemplateId: string;
-  manualPaymentLink?: string; // Added for custom payment links
-  has_branding?: boolean; // Added to store branding status with invoice
+  manualPaymentLink?: string;
+  has_branding?: boolean;
+  is_public?: boolean; // New: For public shareable links
+  upiId?: string; // New: To store the UPI ID
 }
 
 export interface InvoiceTemplateProps {
@@ -127,4 +131,18 @@ export interface AdminDashboardStats {
   activeSubscriptions: number;
   monthlyRevenue: number;
   invoicesGeneratedThisMonth: number;
+}
+
+// For Payment Records
+export interface Payment {
+  id: string; // payment id from gateway
+  user_id: string;
+  plan_id: string;
+  amount: number;
+  currency: string;
+  status: 'created' | 'successful' | 'failed';
+  gateway: 'razorpay';
+  order_id: string;
+  signature?: string;
+  created_at?: string;
 }
