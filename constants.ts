@@ -42,7 +42,7 @@ export const PLANS_DATA: PlanData[] = [
     name: 'Pro', 
     price: '15', 
     price_suffix: '/mo',
-    features: ['Unlimited invoices', 'All templates', 'AI suggestions', 'Priority email support', 'Remove branding'],
+    features: ['Unlimited invoices', 'All templates', 'Priority email support', 'Remove branding'],
     cta_text: 'Choose Pro',
     is_current: false,
     variant: 'primary',

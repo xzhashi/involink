@@ -29,7 +29,28 @@ const PricingPage: React.FC = () => {
   };
   
   if (plansLoading) {
-    return <div className="text-center py-20"><p className="text-xl">Loading plans...</p></div>;
+    return (
+        <div className="container mx-auto px-4 py-12 animate-pulse">
+            <div className="text-center mb-16">
+                <div className="h-12 bg-slate-200 rounded w-1/2 mx-auto mb-4"></div>
+                <div className="h-6 bg-slate-200 rounded w-3/4 mx-auto"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-white p-8 rounded-xl shadow-2xl space-y-6">
+                        <div className="h-7 bg-slate-200 rounded w-1/3"></div>
+                        <div className="h-10 bg-slate-200 rounded w-1/2"></div>
+                        <div className="space-y-3 pt-4">
+                            <div className="h-5 bg-slate-200 rounded"></div>
+                            <div className="h-5 bg-slate-200 rounded"></div>
+                            <div className="h-5 bg-slate-200 rounded"></div>
+                        </div>
+                        <div className="h-12 bg-slate-200 rounded-md mt-6"></div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
   }
 
   return (

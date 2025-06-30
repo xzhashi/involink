@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Button from '../common/Button.tsx';
 import Input from '../common/Input.tsx';
@@ -59,7 +61,6 @@ const AdminUsersView: React.FC = () => {
       const errorMessage = typeof e?.message === 'string' ? e.message : "An unknown error occurred while fetching users.";
       const defaultGuidance = "Ensure backend Edge Functions (e.g., 'admin-list-users') are deployed to Supabase, environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) are correctly set in the Supabase dashboard for each function, and your admin user has the correct role metadata.";
       setUserActionError(`${errorMessage} ${defaultGuidance}`);
-      console.error("AdminUsersView: Error fetching users", e); 
     } finally {
       setLoadingUsers(false);
     }
@@ -124,7 +125,6 @@ const AdminUsersView: React.FC = () => {
       setCurrentUserForModal(null);
     } catch (e: any) {
       setUserActionError(e.message || "An error occurred. Ensure backend Edge Function is implemented and accessible.");
-      console.error("AdminUsersView: Error saving user", e);
     } finally {
       setIsProcessingUserAction(false);
     }
@@ -132,7 +132,7 @@ const AdminUsersView: React.FC = () => {
   
   const confirmDeleteUser = (user: AdminUser) => {
     if (user.id === currentAdminUser?.id) {
-        alert("You cannot delete your own admin account.");
+        setUserActionError("You cannot delete your own admin account.");
         return;
     }
     setUserToDelete(user);
@@ -152,7 +152,6 @@ const AdminUsersView: React.FC = () => {
       setUserToDelete(null);
     } catch (e: any) {
       setUserActionError(e.message || "An error occurred during deletion. Ensure backend Edge Function is implemented.");
-      console.error("AdminUsersView: Error deleting user", e);
     } finally {
       setIsProcessingUserAction(false);
     }
@@ -173,7 +172,25 @@ const AdminUsersView: React.FC = () => {
   };
 
   if (loadingUsers && users.length === 0) {
-    return <p className="text-neutral-DEFAULT p-4">Loading users...</p>;
+    return (
+        <div className="animate-pulse">
+            <div className="flex justify-between items-center mb-8">
+                <div className="h-9 bg-slate-200 rounded w-1/3"></div>
+                <div className="h-10 bg-slate-200 rounded w-32"></div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+                <div className="h-10 bg-slate-200 rounded w-full"></div>
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4 p-3 border-b border-slate-200">
+                        <div className="h-5 bg-slate-200 rounded w-1/3"></div>
+                        <div className="h-5 bg-slate-200 rounded w-1/4"></div>
+                        <div className="h-5 bg-slate-200 rounded w-1/4"></div>
+                        <div className="flex-grow h-5 bg-slate-200 rounded"></div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
   }
 
   return (

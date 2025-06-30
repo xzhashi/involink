@@ -39,7 +39,6 @@ const PaymentTools: React.FC<PaymentToolsProps> = ({
 
   const handleGenerateUpiLink = async () => {
     if (!upiId || invoiceTotal <= 0) {
-      alert('Please enter a valid UPI ID and ensure the invoice total is greater than zero.');
       setGeneratedUpiLink('');
       setQrCodeDataUrl('');
       // Optionally call onUpiDetailsGenerated with empty strings if needed by parent
@@ -64,8 +63,6 @@ const PaymentTools: React.FC<PaymentToolsProps> = ({
       setQrCodeDataUrl(qrDataUrl);
       onUpiDetailsGenerated(upiLink, qrDataUrl); // Call callback with generated details
     } catch (err) {
-      console.error('Failed to generate QR code', err);
-      alert('Failed to generate QR code. Please try again.');
       setQrCodeDataUrl(''); // Clear QR on error
       // Optionally call onUpiDetailsGenerated with link and empty QR string
       // onUpiDetailsGenerated(upiLink, '');
@@ -78,8 +75,7 @@ const PaymentTools: React.FC<PaymentToolsProps> = ({
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
       }).catch(err => {
-        console.error('Failed to copy UPI link: ', err);
-        alert('Failed to copy link. Please copy it manually.');
+        // Fail silently in production
       });
     }
   };

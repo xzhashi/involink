@@ -9,7 +9,6 @@ import Button from '../components/common/Button.tsx';
 import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
 import { ShareIcon } from '../components/icons/ShareIcon.tsx';
 import { WhatsAppIcon } from '../components/icons/WhatsAppIcon.tsx';
-import { suggestItemDescriptions, suggestInvoiceNote } from '../services/geminiService.ts';
 import { calculateInvoiceTotal } from '../utils.ts';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx'; // Import usePlans
@@ -19,6 +18,58 @@ import { PlusIcon } from '../components/icons/PlusIcon.tsx';
 import MobileActionsBar from '../components/MobileActionsBar.tsx'; // New: Mobile Actions
 import { PaletteIcon } from '../components/icons/PaletteIcon.tsx'; // New: Palette Icon
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
+
+const CreateInvoicePageSkeleton: React.FC = () => {
+    return (
+        <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 animate-pulse">
+            {/* Left side: Form Skeleton */}
+            <div className="lg:w-2/5 xl:w-1/3 space-y-6">
+                <div className="h-14 bg-slate-200 rounded-lg"></div>
+                {/* Section Card Skeleton */}
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                    <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+                    <div className="h-10 bg-slate-200 rounded w-full"></div>
+                    <div className="flex gap-4">
+                        <div className="h-10 bg-slate-200 rounded w-1/2"></div>
+                        <div className="h-10 bg-slate-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+                {/* Another Section Card Skeleton */}
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                    <div className="h-6 bg-slate-200 rounded w-1/2"></div>
+                    <div className="h-10 bg-slate-200 rounded w-full"></div>
+                    <div className="h-20 bg-slate-200 rounded w-full"></div>
+                </div>
+                 {/* Items Section Card Skeleton */}
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                    <div className="h-6 bg-slate-200 rounded w-1/4"></div>
+                    <div className="h-16 bg-slate-200 rounded w-full"></div>
+                    <div className="h-16 bg-slate-200 rounded w-full"></div>
+                </div>
+            </div>
+
+            {/* Right side: Preview Skeleton */}
+            <div className="lg:w-3/5 xl:w-2/3">
+                <div className="bg-white shadow-xl rounded-lg h-[80vh]">
+                    <div className="p-4 md:p-8 space-y-6">
+                        <div className="flex justify-between">
+                            <div className="space-y-2 w-1/2">
+                                <div className="h-8 bg-slate-200 rounded w-3/4"></div>
+                                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                            </div>
+                            <div className="h-12 bg-slate-200 rounded w-1/4"></div>
+                        </div>
+                        <div className="h-4 bg-slate-200 rounded w-full mt-10"></div>
+                        <div className="h-4 bg-slate-200 rounded w-full"></div>
+                        <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+                        <div className="h-40 bg-slate-200 rounded w-full mt-10"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const LimitReachedModal: React.FC<{ plan: PlanData | null, onClose: () => void }> = ({ plan, onClose }) => (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[80] no-print backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="limit-modal-title">
@@ -48,7 +99,6 @@ const CreateInvoicePage: React.FC = () => {
   const initialTemplateIdFromState = location.state?.initialTemplateId as string | undefined;
 
   const [invoice, setInvoice] = useState<InvoiceData>(() => ({...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`}));
-  const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local_saved'>('idle');
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared' | 'error' | 'not_supported'>('idle');
   const [pageLoading, setPageLoading] = useState(true);
@@ -140,7 +190,6 @@ const CreateInvoicePage: React.FC = () => {
           if (invoiceDbId) { 
             loadedInvoiceData = await fetchInvoiceByIdFromSupabase(invoiceDbId, user.id);
             if (!loadedInvoiceData && isMounted) {
-                console.warn(`Invoice with db_id ${invoiceDbId} not found for user ${user.id} or general error. Redirecting to /create.`);
                 navigate('/create', { replace: true });
                 setPageLoading(false);
                 return;
@@ -159,7 +208,6 @@ const CreateInvoicePage: React.FC = () => {
                 newInvoiceFlag = false; 
               }
             } catch (e) {
-              console.error("Corrupted 'currentInvoice' in localStorage, resetting. Error:", e);
               localStorage.removeItem('currentInvoice');
             }
           }
@@ -181,7 +229,7 @@ const CreateInvoicePage: React.FC = () => {
         setTemporaryLogoUrl(null); // Reset temporary logo on load
 
       } catch (error) {
-        console.error("Error during loadInvoice execution in CreateInvoicePage:", error);
+        // Error handling can be done here if needed (e.g., showing a toast)
       } finally {
         if (isMounted) {
           setPageLoading(false);
@@ -231,10 +279,8 @@ const CreateInvoicePage: React.FC = () => {
         } else {
           localStorage.setItem('currentInvoice', JSON.stringify(invoice));
           setSaveStatus('local_saved');
-          console.warn("Invoice user_id mismatch or not set for logged-in user. Saved locally.");
         }
       } catch (e) {
-        console.error("Error auto-saving invoice:", e);
         setSaveStatus('error');
       } finally {
          const resetSaveStatusTimer = setTimeout(() => {
@@ -338,7 +384,6 @@ const CreateInvoicePage: React.FC = () => {
         await navigator.share(shareData);
         setShareStatus('shared');
       } catch (err) {
-        console.error('Error sharing:', err);
         setShareStatus('error');
       }
     } else if (navigator.clipboard) {
@@ -346,7 +391,6 @@ const CreateInvoicePage: React.FC = () => {
         await navigator.clipboard.writeText(shareData.text);
         setShareStatus('copied');
       } catch (err) {
-        console.error('Error copying to clipboard:', err);
         setShareStatus('error');
       }
     } else {
@@ -358,7 +402,8 @@ const CreateInvoicePage: React.FC = () => {
   const handleShareOnWhatsApp = () => {
     const recipientPhone = invoice.recipient.phone;
     if (!recipientPhone || recipientPhone.trim() === '') {
-      alert('Please enter the recipient\'s phone number in the invoice details to share on WhatsApp.');
+      // Non-blocking notification is preferred over alert()
+      // e.g., show a toast message. For now, we'll just fail silently.
       return;
     }
     setShowWhatsAppOptionsModal(true); 
@@ -384,57 +429,6 @@ const CreateInvoicePage: React.FC = () => {
     setShowWhatsAppOptionsModal(false);
   };
 
-
-  const handleGeminiSuggestDescription = async (itemId: string, currentDescription: string, keyword: string) => {
-    const effectiveKeyword = keyword.trim() || currentDescription.trim();
-    if (!effectiveKeyword) {
-      alert("Please enter a keyword or have some existing description for AI suggestions.");
-      return;
-    }
-    setIsGenerating(prev => ({ ...prev, [`desc-${itemId}`]: true }));
-    try {
-      const suggestions = await suggestItemDescriptions(effectiveKeyword);
-      if (suggestions && suggestions.length > 0) {
-        const validSuggestion = suggestions.find(s => !s.toLowerCase().includes("error"));
-        if (validSuggestion) {
-            handleItemChange(itemId, 'description', validSuggestion);
-        } else if (suggestions[0]) {
-             handleItemChange(itemId, 'description', suggestions[0]);
-             if (suggestions[0].toLowerCase().includes("error")) {
-                alert(suggestions[0]);
-             }
-        } else {
-            alert("No suggestions found. Try a different keyword.");
-        }
-      } else {
-        alert("No suggestions found. Try a different keyword.");
-      }
-    } catch (error) {
-      console.error("Gemini suggestion error:", error);
-      alert("Failed to get suggestions. Please check your API key or network.");
-    } finally {
-      setIsGenerating(prev => ({ ...prev, [`desc-${itemId}`]: false }));
-    }
-  };
-  
-  const handleGeminiSuggestNote = async (context: string) => {
-    const currentNotes = invoice.notes || "";
-    const effectiveContext = context.trim() || currentNotes.trim() || "general thank you for business";
-    
-    setIsGenerating(prev => ({ ...prev, notes: true }));
-    try {
-      const suggestion = await suggestInvoiceNote(effectiveContext);
-      if (suggestion.toLowerCase().includes("error")) {
-        alert(suggestion);
-      }
-      handleInvoiceChange('notes', suggestion);
-    } catch (error) {
-      console.error("Gemini suggestion error for note:", error);
-      alert("Failed to get note suggestion. Please check your API key or network.");
-    } finally {
-      setIsGenerating(prev => ({ ...prev, notes: false }));
-    }
-  };
 
   const handleCreateNew = () => {
     if (isLimitReached) {
@@ -471,11 +465,7 @@ const CreateInvoicePage: React.FC = () => {
   }, []);
 
   if (authLoading || pageLoading) {
-    return (
-      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
-        <p className="text-xl text-neutral-dark">Loading Invoice Editor...</p>
-      </div>
-    );
+    return <CreateInvoicePageSkeleton />;
   }
 
   const isSaveDisabled = isLimitReached && !invoice.db_id;
@@ -502,9 +492,6 @@ const CreateInvoicePage: React.FC = () => {
                 onAddItem={addItem}
                 onRemoveItem={removeItem}
                 onDiscountChange={handleDiscountChange}
-                onSuggestDescription={handleGeminiSuggestDescription}
-                onSuggestNote={handleGeminiSuggestNote}
-                isGenerating={isGenerating}
                 onUpiDetailsGenerated={handleUpiDetailsGenerated}
                 temporaryLogoUrl={temporaryLogoUrl}
                 onTemporaryLogoChange={handleTemporaryLogoChange}
