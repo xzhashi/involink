@@ -15,7 +15,7 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
   return (
     <div className="p-6 md:p-10 font-sans bg-white text-neutral-darkest print:p-0">
       {/* Header with Background */}
-      <header className="bg-primary-DEFAULT text-white p-8 rounded-t-lg -mx-6 -mt-6 md:-mx-10 md:-mt-10 print:bg-slate-700 print:text-white print:rounded-none print:-m-0">
+      <header className="bg-primary-DEFAULT text-white p-8 rounded-t-lg -mx-6 -mt-6 md:-mx-10 md:-mt-10 print:bg-slate-700 print:text-white print:rounded-none print:m-0">
         <div className="flex justify-between items-center">
           <div>
             {invoice.sender.logoUrl ? (
@@ -57,109 +57,113 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
       {/* Items Table */}
       <section className="mb-8">
         <table className="w-full">
-          <thead className="bg-neutral-light rounded-md">
+          <thead className="bg-neutral-lightest print:bg-slate-100">
             <tr>
-              <th className="text-left p-3 font-semibold text-neutral-darkest">Description</th>
-              <th className="text-right p-3 font-semibold text-neutral-darkest">Qty</th>
-              <th className="text-right p-3 font-semibold text-neutral-darkest">Unit Price</th>
-              <th className="text-right p-3 font-semibold text-neutral-darkest">Total</th>
+              <th className="text-left py-3 px-4 text-sm font-semibold uppercase text-neutral-DEFAULT">Description</th>
+              <th className="text-center py-3 px-4 text-sm font-semibold uppercase text-neutral-DEFAULT">Qty</th>
+              <th className="text-right py-3 px-4 text-sm font-semibold uppercase text-neutral-DEFAULT">Unit Price</th>
+              <th className="text-right py-3 px-4 text-sm font-semibold uppercase text-neutral-DEFAULT">Amount</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-neutral-light">
             {invoice.items.map(item => (
-              <tr key={item.id} className="border-b border-neutral-light">
-                <td className="p-3 text-neutral-DEFAULT">{item.description}</td>
-                <td className="text-right p-3 text-neutral-DEFAULT">{item.quantity}</td>
-                <td className="text-right p-3 text-neutral-DEFAULT">{invoice.currency} {item.unitPrice.toFixed(2)}</td>
-                <td className="text-right p-3 text-neutral-darkest font-medium">{invoice.currency} {(item.quantity * item.unitPrice).toFixed(2)}</td>
+              <tr key={item.id} className="hover:bg-neutral-lightest/50">
+                <td className="py-3 px-4 text-neutral-darkest">{item.description}</td>
+                <td className="text-center py-3 px-4 text-neutral-DEFAULT">{item.quantity}</td>
+                <td className="text-right py-3 px-4 text-neutral-DEFAULT">{invoice.currency} {item.unitPrice.toFixed(2)}</td>
+                <td className="text-right py-3 px-4 text-neutral-darkest font-semibold">{invoice.currency} {(item.quantity * item.unitPrice).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
-
-      {/* Totals Section & Payment */}
-      <section className="flex flex-col md:flex-row justify-end items-start gap-6 mb-8">
-        {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
-            <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0 md:mr-auto bg-neutral-lightest p-4 rounded-md text-center md:text-left">
-                <h4 className="font-semibold text-neutral-darkest mb-2 text-md">Easy Payment:</h4>
+      
+      {/* Totals & Payment Section */}
+      <section className="flex flex-col md:flex-row justify-between items-start gap-8 mt-10">
+        <div className="w-full md:w-1/2">
+          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+            <div className="mt-4">
+              <h4 className="font-semibold text-neutral-darkest mb-3 text-lg">Payment Details</h4>
+              <div className="flex items-center gap-6">
                 {qrCodeDataUrl && (
-                <div className="mb-3">
-                    <p className="text-xs text-neutral-DEFAULT mb-1">Scan QR to Pay (UPI):</p>
-                    <img src={qrCodeDataUrl} alt="UPI QR Code" className="border border-neutral-light p-1 rounded-md inline-block" style={{width: '100px', height: '100px'}}/>
-                </div>
-                )}
-                {upiLink && (
-                <div className="mb-3">
-                    <a 
-                    href={upiLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-block px-5 py-2.5 bg-secondary-DEFAULT hover:bg-secondary-dark text-white text-sm font-semibold rounded-md shadow hover:shadow-lg transition-colors"
-                    >
-                    Pay Now via UPI
-                    </a>
-                </div>
-                )}
-                {invoice.manualPaymentLink && (
-                  <div className="mt-2">
-                      <a 
-                          href={invoice.manualPaymentLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-block px-5 py-2.5 bg-primary-DEFAULT hover:bg-primary-dark text-white text-sm font-semibold rounded-md shadow hover:shadow-lg transition-colors"
-                      >
-                          Pay Online Now
-                      </a>
+                  <div className="text-center">
+                    <p className="text-xs text-neutral-DEFAULT mb-1">Scan to Pay (UPI)</p>
+                    <img src={qrCodeDataUrl} alt="UPI QR Code" className="border-2 border-neutral-light p-1 rounded-md bg-white" style={{width: '100px', height: '100px'}}/>
                   </div>
                 )}
-            </div>
-        )}
-        <div className="w-full md:w-2/5 lg:w-1/3 space-y-2">
-          <div className="flex justify-between p-2 rounded bg-neutral-lightest">
-            <span className="text-neutral-DEFAULT">Subtotal:</span>
-            <span className="text-neutral-darkest font-medium">{invoice.currency} {subtotal.toFixed(2)}</span>
-          </div>
-          {invoice.taxRate > 0 && (
-            <div className="flex justify-between p-2 rounded bg-neutral-lightest">
-              <span className="text-neutral-DEFAULT">Tax ({invoice.taxRate}%):</span>
-              <span className="text-neutral-darkest font-medium">{invoice.currency} {taxAmount.toFixed(2)}</span>
+                <div className="space-y-3">
+                  {upiLink && (
+                    <a 
+                      href={upiLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-block px-5 py-2 bg-primary-DEFAULT text-white text-sm font-medium rounded-md shadow-md hover:bg-primary-dark transition-colors"
+                    >
+                      Pay Now via UPI
+                    </a>
+                  )}
+                  {invoice.manualPaymentLink && (
+                    <a 
+                        href={invoice.manualPaymentLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-block px-5 py-2 bg-secondary-DEFAULT text-white text-sm font-medium rounded-md shadow-md hover:bg-secondary-dark transition-colors"
+                    >
+                        Pay Online
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           )}
-          {invoice.discount.value > 0 && (
-             <div className="flex justify-between p-2 rounded bg-neutral-lightest">
-              <span className="text-neutral-DEFAULT">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
-              <span className="text-red-500 font-medium">- {invoice.currency} {discountAmount.toFixed(2)}</span>
+        </div>
+        <div className="w-full md:w-auto md:min-w-[300px] bg-neutral-lightest p-6 rounded-lg">
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-neutral-DEFAULT">Subtotal:</span>
+              <span className="text-neutral-darkest font-semibold">{invoice.currency} {subtotal.toFixed(2)}</span>
             </div>
-          )}
-          <div className="flex justify-between p-3 bg-primary-DEFAULT text-white rounded-md mt-2 shadow-lg">
-            <span className="font-bold text-lg">Total Due:</span>
-            <span className="font-bold text-lg">{invoice.currency} {total.toFixed(2)}</span>
+            {invoice.taxRate > 0 && (
+              <div className="flex justify-between">
+                <span className="text-neutral-DEFAULT">Tax ({invoice.taxRate}%):</span>
+                <span className="text-neutral-darkest font-semibold">{invoice.currency} {taxAmount.toFixed(2)}</span>
+              </div>
+            )}
+            {invoice.discount.value > 0 && (
+              <div className="flex justify-between">
+                <span className="text-neutral-DEFAULT">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
+                <span className="text-red-500 font-semibold">- {invoice.currency} {discountAmount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-3 border-t-2 border-primary-DEFAULT mt-3">
+              <span className="font-bold text-xl text-primary-dark">Total Due:</span>
+              <span className="font-bold text-xl text-primary-dark">{invoice.currency} {total.toFixed(2)}</span>
+            </div>
           </div>
         </div>
       </section>
 
       {(invoice.notes || invoice.terms) && (
-      <section className="mt-8 pt-6 border-t border-neutral-light text-sm">
+      <section className="mt-10 pt-6 border-t border-neutral-light text-sm text-neutral-DEFAULT">
         {invoice.notes && (
-          <div className="mb-4 bg-neutral-lightest p-4 rounded-md">
+          <div className="mb-4">
             <h4 className="font-semibold text-neutral-darkest mb-1">Notes:</h4>
-            <p className="text-neutral-DEFAULT whitespace-pre-wrap">{invoice.notes}</p>
+            <p className="whitespace-pre-wrap">{invoice.notes}</p>
           </div>
         )}
         {invoice.terms && (
-          <div className="bg-neutral-lightest p-4 rounded-md">
+          <div>
             <h4 className="font-semibold text-neutral-darkest mb-1">Terms & Conditions:</h4>
-            <p className="text-neutral-DEFAULT whitespace-pre-wrap">{invoice.terms}</p>
+            <p className="whitespace-pre-wrap">{invoice.terms}</p>
           </div>
         )}
       </section>
       )}
-      
-      <footer className="text-center text-xs text-neutral-DEFAULT mt-12 pt-6 border-t border-neutral-light">
-        <p>Thank you for choosing {invoice.sender.name || "us"}!</p>
-        {userPlan?.has_branding && (
-          <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
+
+      <footer className="text-center text-xs text-neutral-DEFAULT mt-12 pt-6">
+        <p>Thank you for your business. We look forward to working with you again!</p>
+         {userPlan?.has_branding && (
+          <div className="text-center text-xs text-gray-400 mt-3 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
           </div>
         )}
