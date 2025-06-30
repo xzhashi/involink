@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice Maker by LinkFC | Online Invoice Maker</title>
-  <meta name="description" content="Create professional invoices effortlessly with Invoice Maker by LinkFC. Modern templates, UPI/QR payments, and easy sharing. Perfect for freelancers and businesses." />
+  <meta name="description" content="Create professional invoices effortlessly with Invoice Maker by LinkFC. Modern templates, AI suggestions, UPI/QR payments, and easy sharing. Perfect for freelancers and businesses." />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=Poppins:wght@300;400;600&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300&family=Satisfy&family=Caveat&family=Indie+Flower&family=Patrick+Hand&family=Quicksand:wght@400;500;700&family=Dancing+Script:wght@400;700&family=Press+Start+2P&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
@@ -55,17 +55,61 @@
       plugins: [],
     }; // Added semicolon here
   </script>
-  <link rel="stylesheet" href="./index.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Removed global .no-print rule that was hiding the form panel on screen */
+    @media print {
+      body { 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+        margin: 0;
+        padding: 0;
+       }
+      .no-print { display: none !important; } /* This rule is correctly scoped for printing */
+      #invoice-preview-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+       .print-p-0 { padding: 0 !important; }
+       .print-m-0 { margin: 0 !important; }
+       .print-shadow-none { box-shadow: none !important; }
+       .print-rounded-none { border-radius: 0 !important; }
+       .print-bg-slate-700 { background-color: #334155 !important; }
+       .print-bg-slate-600 { background-color: #475569 !important; }
+       .print-bg-slate-800 { background-color: #1e293b !important; }
+       .print-text-white { color: white !important; }
+       .print-hidden { display: none !important; }
+    }
+    .thin-scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+    .thin-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9; /* slate-100 */
+      border-radius: 10px;
+    }
+    .thin-scrollbar::-webkit-scrollbar-thumb {
+      background: #94a3b8; /* slate-400 */
+      border-radius: 10px;
+    }
+    .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #64748b; /* slate-500 */
+    }
+  </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.1.0?target=es2022",
-    "react-dom": "https://esm.sh/react-dom@^19.1.0?target=es2022",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.6.2?target=es2022",
-    "qrcode": "https://esm.sh/qrcode@^1.5.4?target=es2022",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.50.2?target=es2022",
+    "react": "https://esm.sh/react@^19.1.0",
     "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "react/": "https://esm.sh/react@^19.1.0/"
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.6.2",
+    "@google/genai": "https://esm.sh/@google/genai@^1.7.0",
+    "qrcode": "https://esm.sh/qrcode@^1.5.4",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.50.2"
   }
 }
 </script>
@@ -73,7 +117,6 @@
 </head>
 <body class="bg-neutral-lightest text-neutral-darkest">
   <div id="root"></div>
-  <script type="module" src="./index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>

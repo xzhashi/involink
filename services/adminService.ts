@@ -26,7 +26,7 @@ export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> =
       (u.raw_user_meta_data?.planId !== 'free_tier' && u.user_metadata?.planId !== 'free_tier')
     ).length;
   } catch (userError: any) {
-    // Silently fail on user fetch, stats will be 0.
+    console.warn("AdminDashboardStats: Could not fetch user data for stats, counts will be 0.", userError.message || userError);
   }
   
   // Fetch invoice count for the current month
@@ -43,7 +43,7 @@ export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> =
     if (invoiceError) throw invoiceError;
     invoicesGeneratedThisMonth = count || 0;
   } catch (invoiceError) {
-     // Silently fail on invoice fetch, count will be 0.
+     console.warn("AdminDashboardStats: Could not fetch invoice count. Ensure the admin role has SELECT permission on the 'invoices' table via RLS.", invoiceError);
   }
 
 
@@ -62,6 +62,7 @@ export const fetchAllUsersAdmin = async (): Promise<AdminUser[]> => {
   const { data, error } = await supabase.functions.invoke('admin-list-users');
   
   if (error) {
+    console.error('Error invoking admin-list-users function:', error);
     const contextError = (error as any).context?.message;
     const errorMessage = `Failed to list users: ${contextError || error.message}. Ensure 'admin-list-users' Edge Function is deployed, configured with environment variables, and your user has admin role.`;
     throw new Error(errorMessage);
@@ -69,6 +70,7 @@ export const fetchAllUsersAdmin = async (): Promise<AdminUser[]> => {
 
   // The 'data' object from the function response is expected to have a 'users' property.
   if (!data || !Array.isArray(data.users)) {
+    console.error('Invalid response from admin-list-users function:', data);
     throw new Error("Received an invalid response from the user listing service.");
   }
   
@@ -84,6 +86,7 @@ export const inviteUserAdmin = async (email: string, planId: string): Promise<{ 
   });
 
   if (error) {
+    console.error('Error invoking admin-invite-user function:', error);
     const contextError = (error as any).context?.message;
     return { user: null, error: `Failed to invite user: ${contextError || error.message}. Ensure 'admin-invite-user' Edge Function is deployed and configured in your self-hosted environment.` };
   }
@@ -96,6 +99,7 @@ export const updateUserAdmin = async (userId: string, updates: Partial<AdminUser
     body: { userId, updates }
   });
   if (error) {
+    console.error('Error invoking admin-update-user function:', error);
     const contextError = (error as any).context?.message;
     return { user: null, error: `Failed to update user: ${contextError || error.message}. Ensure 'admin-update-user' Edge Function is deployed.` };
   }
@@ -108,6 +112,7 @@ export const deleteUserAdmin = async (userId: string): Promise<{ success: boolea
     body: { userId }
   });
    if (error) {
+    console.error('Error invoking admin-delete-user function:', error);
     const contextError = (error as any).context?.message;
     return { success: false, error: `Failed to delete user: ${contextError || error.message}. Ensure 'admin-delete-user' Edge Function is deployed.` };
   }
@@ -125,6 +130,7 @@ export const fetchAllPlansAdmin = async (): Promise<PlanData[]> => {
     .order('sort_order', { ascending: true });
 
   if (error) {
+    console.error('Error fetching plans:', error);
     throw error; 
   }
   return data || [];
@@ -141,6 +147,7 @@ export const createPlanAdmin = async (planData: Omit<PlanData, 'created_at' | 'u
     .single();
   
   if (error) {
+    console.error('Error creating plan:', error);
     return { plan: null, error: error.message };
   }
   return { plan: data, error: null };
@@ -158,6 +165,7 @@ export const updatePlanAdmin = async (planData: PlanData): Promise<{ plan: PlanD
     .single();
   
   if (error) {
+    console.error('Error updating plan:', error);
     return { plan: null, error: error.message };
   }
   return { plan: data, error: null };
@@ -170,6 +178,7 @@ export const deletePlanAdmin = async (planId: string): Promise<{ success: boolea
     .eq('id', planId);
 
   if (error) {
+    console.error('Error deleting plan:', error);
     return { success: false, error: error.message };
   }
   return { success: true, error: null };

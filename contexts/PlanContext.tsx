@@ -59,6 +59,7 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (e: any) {
       const errorMessage = e?.message || "Failed to fetch plans.";
       setError(errorMessage);
+      console.error("PlanContext: Error loading plans:", e);
     } finally {
       setLoading(false);
     }
@@ -96,6 +97,7 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .lte('created_at', endOfMonth);
 
       if (countError) {
+        console.error("Error counting user invoices:", countError);
         setIsLimitReached(false); // Default to not-reached on error
         return;
       }
@@ -111,7 +113,7 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Function for a user to change their own plan
   const changePlan = async (planId: string) => {
     if (!user) {
-        setError("Cannot change plan, no user is logged in.");
+        console.error("Cannot change plan, no user is logged in.");
         return;
     };
     setProcessing(true);
@@ -121,6 +123,7 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     if (updateError) {
       setError(updateError.message);
+      console.error("Error changing plan:", updateError);
     }
     // The onAuthStateChange listener in AuthContext will trigger a user update,
     // which in turn will update currentUserPlan via the useEffect above.

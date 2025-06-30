@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
       setDropdownOpen(false);
       navigate('/'); 
     } catch (error) {
-      // Error is handled in the auth context, no need to log here.
+      console.error("Logout failed:", error);
     }
   };
 
@@ -66,11 +66,7 @@ const Navbar: React.FC = () => {
             </Link>
             
             {loading ? (
-              <div className="flex items-center space-x-4 animate-pulse">
-                <div className="h-5 w-20 bg-slate-200 rounded"></div>
-                <div className="h-8 w-8 bg-slate-200 rounded-full"></div>
-                <div className="h-8 w-24 bg-slate-200 rounded-md hidden sm:block"></div>
-              </div>
+              <span className="text-sm text-neutral-DEFAULT">Loading...</span>
             ) : user ? (
               <>
                 <Link 

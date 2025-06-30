@@ -1,10 +1,11 @@
 
 
-import React from 'react';
+import React, { useState } from 'react';
 import { InvoiceItem } from '../../types.ts';
 import Input from '../../components/common/Input.tsx';
 import Button from '../../components/common/Button.tsx';
 import { TrashIcon } from '../../components/icons/TrashIcon.tsx';
+import { SparklesIcon } from '../../components/icons/SparklesIcon.tsx';
 
 interface InvoiceItemRowProps {
   item: InvoiceItem;
@@ -12,13 +13,25 @@ interface InvoiceItemRowProps {
   currency: string;
   onItemChange: (itemId: string, key: keyof InvoiceItem, value: string | number) => void;
   onRemoveItem: (itemId: string) => void;
+  onSuggestDescription: (itemId: string, currentDescription: string, keyword: string) => Promise<void>;
+  isGenerating: boolean;
 }
 
-const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, onItemChange, onRemoveItem }) => {
+const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, onItemChange, onRemoveItem, onSuggestDescription, isGenerating }) => {
+  const [descriptionKeyword, setDescriptionKeyword] = useState('');
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     onItemChange(item.id, name as keyof InvoiceItem, name === 'quantity' || name === 'unitPrice' ? parseFloat(value) || 0 : value);
+  };
+  
+  const handleSuggest = async () => {
+    // Keyword can be optional if current description is already somewhat filled
+    // if (!descriptionKeyword.trim() && !item.description.trim()) {
+    //   alert("Please enter a keyword or have some existing description for AI suggestions.");
+    //   return;
+    // }
+    await onSuggestDescription(item.id, item.description, descriptionKeyword);
   };
 
   const total = item.quantity * item.unitPrice;
@@ -38,6 +51,28 @@ const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, 
             wrapperClassName="!mb-1"
             aria-label={`Description for item ${index + 1}`}
           />
+          <div className="flex items-center gap-1 mt-1">
+            <Input 
+              placeholder="Keyword for AI"
+              value={descriptionKeyword}
+              onChange={(e) => setDescriptionKeyword(e.target.value)}
+              wrapperClassName="!mb-0 flex-grow"
+              className="!text-xs !py-1"
+              id={`item-description-keyword-${item.id}`}
+              aria-label={`Keyword for AI suggestion for item ${index + 1}`}
+            />
+            <Button 
+                onClick={handleSuggest} 
+                variant="ghost" 
+                size="sm"
+                disabled={isGenerating}
+                className="!py-1 !px-2"
+                leftIcon={<SparklesIcon className="w-3 h-3" />}
+                title={`Suggest description for item ${index + 1} with AI`}
+            >
+                {isGenerating ? '...' : 'Suggest'}
+            </Button>
+          </div>
         </div>
 
         {/* Quantity */}

@@ -56,14 +56,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         if (error) {
-          // Error can be handled by a global error handler if needed
+          console.error("AuthContext: Error getting session:", error);
         }
         if (isMounted) {
           setSession(currentSession);
           updateUserRoleAndAdminStatus(currentSession?.user ?? null);
         }
       } catch (e) {
-        // Critical error, could be reported to a logging service
+        console.error("AuthContext: Critical error in getSession:", e);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -95,6 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // User state, role, and isAdmin will be updated by onAuthStateChange
     setLoading(false);
     if (error) {
+      console.error('Login error:', error.message);
       return { user: null, session: null, error, weakPassword: null };
     }
     return { user: data.user, session: data.session, error: null, weakPassword: null };
@@ -112,6 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     setLoading(false);
     if (error) {
+      console.error('Signup error:', error.message);
       const weakPasswordInfo = (error as any).data?.weak_password as WeakPasswordDetails | undefined;
       return { user: null, session: null, error, weakPassword: weakPasswordInfo || null };
     }
@@ -124,7 +126,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(true);
     const { error } = await supabase.auth.signOut();
     if (error) {
-      // Error can be handled by a global error handler if needed
+      console.error('Logout error:', error.message);
     }
     // Session, user, role, and isAdmin are set to null/false by the onAuthStateChange listener
     setLoading(false);

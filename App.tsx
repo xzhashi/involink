@@ -1,6 +1,5 @@
 
 
-
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import HomePage from './pages/HomePage.tsx';
@@ -20,24 +19,17 @@ import AdminUsersView from './components/admin/AdminUsersView.tsx';
 import AdminPlansView from './components/admin/AdminPlansView.tsx';
 import AdminPaymentsView from './components/admin/AdminPaymentsView.tsx';
 
-const PageSkeleton: React.FC = () => {
-  return (
-    <div className="space-y-8 animate-pulse">
-      <div className="flex justify-between items-center">
-        <div className="h-9 bg-slate-200 rounded w-1/3"></div>
-        <div className="h-10 bg-slate-200 rounded w-32"></div>
-      </div>
-      <div className="bg-slate-200 rounded-lg h-96"></div>
-    </div>
-  );
-};
 
 // ProtectedRoute component
 const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <PageSkeleton />;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-xl">Loading...</p>
+      </div>
+    ); 
   }
 
   if (!user) {
@@ -52,7 +44,11 @@ const AdminProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) 
   const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
-     return <PageSkeleton />;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-xl">Loading Admin Access...</p>
+      </div>
+    );
   }
 
   if (!user || !isAdmin) {
