@@ -1,10 +1,6 @@
-
 // supabase/functions/admin-list-users/index.ts
-// @deno-types="npm:@types/node"
-declare var Deno: any;
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import { checkAdminRole } from "../_shared/authHelpers.ts";
 
 const CORS_HEADERS = {
@@ -24,8 +20,8 @@ serve(async (req: Request) => {
     });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) { 
     console.error("admin-list-users: Missing server config.");
     return new Response(JSON.stringify({ error: "Server configuration error." }), {

@@ -1,9 +1,5 @@
-
 // supabase/functions/_shared/authHelpers.ts
-// @deno-types="npm:@types/node"
-declare var Deno: any;
-
-import { createClient, SupabaseClient, User as SupabaseAuthUser } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient, User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 interface UserMetadata {
   role?: 'admin' | 'user';
@@ -27,8 +23,8 @@ export async function checkAdminRole(req: Request): Promise<{ user: Authenticate
     return { user: null, errorResponse: new Response('ok', { headers: corsHeaders }) };
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Auth helper: CRITICAL - Missing Supabase URL or Anon Key environment variables.");
