@@ -2,11 +2,9 @@
 // This file is kept to prevent import errors in other files, but it does nothing.
 
 export const suggestItemDescriptions = async (keyword: string): Promise<string[]> => {
-  console.warn("AI features are disabled.");
   return Promise.resolve([]);
 };
 
 export const suggestInvoiceNote = async (context: string): Promise<string> => {
-  console.warn("AI features are disabled.");
   return Promise.resolve("Thank you for your business.");
 };

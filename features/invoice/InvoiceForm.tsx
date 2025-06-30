@@ -91,7 +91,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) { 
-        alert("File is too large. Please select an image under 2MB.");
         event.target.value = ''; 
         return;
       }
@@ -106,12 +105,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const handleUseLogoUrl = () => {
     if (logoUrlInput.trim()) {
       if (!logoUrlInput.match(/^https?:\/\/.+\.(jpg|jpeg|png|gif|svg)$/i)) {
-          alert("Please enter a valid image URL (http/https, ending in .jpg, .png, .gif, .svg).");
           return;
       }
       onTemporaryLogoChange(logoUrlInput);
-    } else {
-        alert("Please enter a URL.");
     }
   };
 

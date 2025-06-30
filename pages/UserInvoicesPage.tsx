@@ -36,7 +36,6 @@ const UserInvoicesPage: React.FC = () => {
         const userInvoices = await fetchUserInvoicesFromSupabase(user.id);
         setInvoices(userInvoices);
       } catch (e: any) {
-        console.error("Error fetching user invoices:", e);
         setError(e.message || "Failed to load invoices. Please try again.");
       } finally {
         setLoadingInvoices(false);
@@ -64,7 +63,6 @@ const UserInvoicesPage: React.FC = () => {
       setShowDeleteModal(false);
       setInvoiceToDelete(null);
     } catch (e: any) {
-      console.error("Error deleting invoice:", e);
       setError(e.message || "Failed to delete invoice. Please try again.");
     } finally {
       setIsDeleting(false);

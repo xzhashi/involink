@@ -190,7 +190,6 @@ const CreateInvoicePage: React.FC = () => {
           if (invoiceDbId) { 
             loadedInvoiceData = await fetchInvoiceByIdFromSupabase(invoiceDbId, user.id);
             if (!loadedInvoiceData && isMounted) {
-                console.warn(`Invoice with db_id ${invoiceDbId} not found for user ${user.id} or general error. Redirecting to /create.`);
                 navigate('/create', { replace: true });
                 setPageLoading(false);
                 return;
@@ -209,7 +208,6 @@ const CreateInvoicePage: React.FC = () => {
                 newInvoiceFlag = false; 
               }
             } catch (e) {
-              console.error("Corrupted 'currentInvoice' in localStorage, resetting. Error:", e);
               localStorage.removeItem('currentInvoice');
             }
           }
@@ -231,7 +229,7 @@ const CreateInvoicePage: React.FC = () => {
         setTemporaryLogoUrl(null); // Reset temporary logo on load
 
       } catch (error) {
-        console.error("Error during loadInvoice execution in CreateInvoicePage:", error);
+        // Error handling can be done here if needed (e.g., showing a toast)
       } finally {
         if (isMounted) {
           setPageLoading(false);
@@ -281,10 +279,8 @@ const CreateInvoicePage: React.FC = () => {
         } else {
           localStorage.setItem('currentInvoice', JSON.stringify(invoice));
           setSaveStatus('local_saved');
-          console.warn("Invoice user_id mismatch or not set for logged-in user. Saved locally.");
         }
       } catch (e) {
-        console.error("Error auto-saving invoice:", e);
         setSaveStatus('error');
       } finally {
          const resetSaveStatusTimer = setTimeout(() => {
@@ -388,7 +384,6 @@ const CreateInvoicePage: React.FC = () => {
         await navigator.share(shareData);
         setShareStatus('shared');
       } catch (err) {
-        console.error('Error sharing:', err);
         setShareStatus('error');
       }
     } else if (navigator.clipboard) {
@@ -396,7 +391,6 @@ const CreateInvoicePage: React.FC = () => {
         await navigator.clipboard.writeText(shareData.text);
         setShareStatus('copied');
       } catch (err) {
-        console.error('Error copying to clipboard:', err);
         setShareStatus('error');
       }
     } else {
@@ -408,7 +402,8 @@ const CreateInvoicePage: React.FC = () => {
   const handleShareOnWhatsApp = () => {
     const recipientPhone = invoice.recipient.phone;
     if (!recipientPhone || recipientPhone.trim() === '') {
-      alert('Please enter the recipient\'s phone number in the invoice details to share on WhatsApp.');
+      // Non-blocking notification is preferred over alert()
+      // e.g., show a toast message. For now, we'll just fail silently.
       return;
     }
     setShowWhatsAppOptionsModal(true); 

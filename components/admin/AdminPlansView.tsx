@@ -2,7 +2,7 @@
 
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Button from '../common/Button.tsx';
 import Input from '../common/Input.tsx';
 import Textarea from '../common/Textarea.tsx';
@@ -29,6 +29,10 @@ const AdminPlansView: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  
+  const [viewError, setViewError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<PlanData | null>(null);
 
 
   const openModalForNew = () => {
@@ -94,21 +98,28 @@ const AdminPlansView: React.FC = () => {
       setCurrentPlan(null);
     } else {
       setModalError(result.error || "Failed to save plan. Check console for details.");
-      console.error("Plan save error:", result.error);
     }
     setIsProcessing(false);
   };
 
-  const handleDeletePlan = async (planId: string) => {
-    if (window.confirm("Are you sure you want to delete this plan? This will remove it from the database.")) {
-        setIsProcessing(true); 
-        const result = await deletePlanContext(planId);
-        if (!result.success) {
-            alert(result.error || "Failed to delete plan.");
-        }
-        setIsProcessing(false);
+  const requestDeletePlan = (plan: PlanData) => {
+    setPlanToDelete(plan);
+    setShowDeleteConfirm(true);
+    setViewError(null);
+  };
+
+  const confirmDeletePlan = async () => {
+    if (!planToDelete) return;
+    setIsProcessing(true);
+    setViewError(null);
+    const result = await deletePlanContext(planToDelete.id);
+    if (!result.success) {
+      setViewError(result.error || "Failed to delete plan.");
     }
-  }
+    setShowDeleteConfirm(false);
+    setPlanToDelete(null);
+    setIsProcessing(false);
+  };
 
   const handleModalInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -181,7 +192,8 @@ const AdminPlansView: React.FC = () => {
       </div>
 
       {plansContextError && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-4">Error loading plans: {plansContextError}</p>}
-      {isProcessing && <p className="text-blue-500 italic p-2">Processing request...</p>}
+      {viewError && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-4">{viewError}</p>}
+      {isProcessing && !showModal && <p className="text-blue-500 italic p-2">Processing request...</p>}
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         {contextPlans.length === 0 && !plansContextLoading ? (
@@ -213,7 +225,7 @@ const AdminPlansView: React.FC = () => {
                       <Button variant="ghost" size="sm" className="text-primary-DEFAULT !px-2" onClick={() => openModalForEdit(plan)} title="Edit Plan" disabled={isProcessing}>
                         <PencilIcon className="w-4 h-4"/>
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-500 !px-2" onClick={() => handleDeletePlan(plan.id)} title="Delete Plan" disabled={isProcessing}>
+                      <Button variant="ghost" size="sm" className="text-red-500 !px-2" onClick={() => requestDeletePlan(plan)} title="Delete Plan" disabled={isProcessing}>
                         <TrashIcon className="w-4 h-4"/>
                       </Button>
                     </td>
@@ -302,6 +314,23 @@ const AdminPlansView: React.FC = () => {
               <Button variant="primary" onClick={handleSavePlan} disabled={isProcessing}>
                 {isProcessing ? 'Processing...' : (isEditing ? 'Save Changes' : 'Create Plan')}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && planToDelete && (
+         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[80] backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 className="text-lg font-semibold text-neutral-darkest mb-4">Confirm Deletion</h3>
+            <p className="text-sm text-neutral-DEFAULT mb-6">
+                Are you sure you want to delete the plan <span className="font-medium">{planToDelete.name}</span>? This will remove it from the database.
+            </p>
+            <div className="flex justify-end space-x-3">
+                <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)} disabled={isProcessing}>Cancel</Button>
+                <Button variant="danger" onClick={confirmDeletePlan} disabled={isProcessing}>
+                  {isProcessing ? 'Deleting...' : 'Delete Plan'}
+                </Button>
             </div>
           </div>
         </div>

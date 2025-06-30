@@ -1,6 +1,7 @@
 
 
 
+
 import { createClient } from '@supabase/supabase-js';
 import { InvoiceData, InvoiceDataJson } from '../types.ts';
 
@@ -65,8 +66,7 @@ const fromSupabaseInvoiceFormat = (row: any): InvoiceData => {
 
 export const saveInvoiceToSupabase = async (invoice: InvoiceData): Promise<InvoiceData | null> => {
   if (!invoice.user_id) {
-    console.error("User ID is required to save invoice to Supabase.");
-    return null; // Or throw error
+    throw new Error("User ID is required to save invoice to Supabase.");
   }
 
   const { invoice_number, user_id, invoice_data_json } = toSupabaseInvoiceFormat(invoice);
@@ -89,7 +89,6 @@ export const saveInvoiceToSupabase = async (invoice: InvoiceData): Promise<Invoi
   }
 
   if (response.error) {
-    console.error('Error saving invoice to Supabase:', response.error);
     throw response.error;
   }
   
@@ -106,7 +105,6 @@ export const fetchLatestInvoiceFromSupabase = async (userId: string): Promise<In
     .single();
 
   if (error && error.code !== 'PGRST116') { // PGRST116: "Searched item was not found" - not an error if no invoices yet
-    console.error('Error fetching latest invoice from Supabase:', error);
     throw error;
   }
   return data ? fromSupabaseInvoiceFormat(data) : null;
@@ -121,7 +119,6 @@ export const fetchInvoiceByIdFromSupabase = async (dbId: string, userId: string)
     .single();
 
   if (error) {
-    console.error('Error fetching invoice by ID from Supabase:', error);
     if (error.code === 'PGRST116') return null; // Not found
     throw error;
   }
@@ -137,7 +134,6 @@ export const fetchUserInvoicesFromSupabase = async (userId: string): Promise<Inv
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching user invoices:', error);
     throw error;
   }
   return data ? data.map(fromSupabaseInvoiceFormat) : [];
@@ -150,8 +146,5 @@ export const deleteInvoiceFromSupabase = async (dbId: string, userId: string): P
     .eq('id', dbId)
     .eq('user_id', userId); // Ensure user owns the invoice before deleting
 
-  if (error) {
-    console.error('Error deleting invoice from Supabase:', error);
-  }
   return { error };
 };

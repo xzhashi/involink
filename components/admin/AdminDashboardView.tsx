@@ -16,7 +16,6 @@ const AdminDashboardView: React.FC = () => {
         setStats(fetchedStats);
       } catch (e: any) {
         setError("Failed to load dashboard statistics. Some data may be unavailable if backend functions (e.g., for user counts) are not yet implemented or RLS prevents access.");
-        console.error("AdminDashboardView: Error fetching stats", e);
       } finally {
         setLoading(false);
       }

@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
       setDropdownOpen(false);
       navigate('/'); 
     } catch (error) {
-      console.error("Logout failed:", error);
+      // Error is handled in the auth context, no need to log here.
     }
   };
 
