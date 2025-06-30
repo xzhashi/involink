@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Button from '../common/Button.tsx';
 import Input from '../common/Input.tsx';
@@ -173,7 +174,25 @@ const AdminUsersView: React.FC = () => {
   };
 
   if (loadingUsers && users.length === 0) {
-    return <p className="text-neutral-DEFAULT p-4">Loading users...</p>;
+    return (
+        <div className="animate-pulse">
+            <div className="flex justify-between items-center mb-8">
+                <div className="h-9 bg-slate-200 rounded w-1/3"></div>
+                <div className="h-10 bg-slate-200 rounded w-32"></div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+                <div className="h-10 bg-slate-200 rounded w-full"></div>
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4 p-3 border-b border-slate-200">
+                        <div className="h-5 bg-slate-200 rounded w-1/3"></div>
+                        <div className="h-5 bg-slate-200 rounded w-1/4"></div>
+                        <div className="h-5 bg-slate-200 rounded w-1/4"></div>
+                        <div className="flex-grow h-5 bg-slate-200 rounded"></div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
   }
 
   return (

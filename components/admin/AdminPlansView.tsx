@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button.tsx';
 import Input from '../common/Input.tsx';
@@ -150,7 +151,24 @@ const AdminPlansView: React.FC = () => {
   };
 
   if (plansContextLoading && contextPlans.length === 0) { 
-    return <p className="p-4 text-neutral-DEFAULT">Loading plans from database...</p>;
+    return (
+        <div className="animate-pulse">
+            <div className="flex justify-between items-center mb-8">
+                <div className="h-9 bg-slate-200 rounded w-1/3"></div>
+                <div className="h-10 bg-slate-200 rounded w-36"></div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4 p-3 border-b border-slate-200">
+                        <div className="h-5 bg-slate-200 rounded w-1/4"></div>
+                        <div className="h-5 bg-slate-200 rounded w-1/6"></div>
+                        <div className="h-5 bg-slate-200 rounded w-1/6"></div>
+                        <div className="flex-grow h-5 bg-slate-200 rounded"></div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
   }
 
   return (

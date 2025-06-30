@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { InvoiceTemplateProps } from '../../../types.ts';
+import { InvoiceTemplateProps } from '../../../types';
 
 const NatureHarmonyTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);

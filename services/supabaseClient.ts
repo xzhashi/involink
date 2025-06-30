@@ -1,28 +1,18 @@
 
 
+
 import { createClient } from '@supabase/supabase-js';
 import { InvoiceData, InvoiceDataJson } from '../types.ts';
 
-// These should be set in your environment variables
-// const supabaseUrl = process.env.SUPABASE_URL;
-// const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-// --- Temporary fix for environment variable issue: Hardcoding credentials ---
-const supabaseUrl = "https://linkfcinv.brandsscaler.com";
+// --- IMPORTANT DEPLOYMENT NOTE ---
+// The values for `supabaseUrl` and `supabaseAnonKey` have been hardcoded
+// with the credentials you provided to fix deployment issues.
+const supabaseUrl = "https://linkfcinv.brandsscaler.com/";
 const supabaseAnonKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1MDkyNDAyMCwiZXhwIjo0OTA2NTk3NjIwLCJyb2xlIjoiYW5vbiJ9.iyegAqufgTE3eQTKtJTR4HDrx24aZhjM2m1aOgRMeMI";
-// --- End of temporary fix ---
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    "Supabase URL or Anon Key is missing. " +
-    "Ensure SUPABASE_URL and SUPABASE_ANON_KEY environment variables are set or hardcoded for this environment."
-  );
-  // Potentially throw an error or use a mock client for development if desired
-  // For this fix, if they are still missing after hardcoding attempt, something is very wrong.
-  throw new Error("Supabase credentials are still missing after attempting to hardcode them.");
-}
-
+// Initialize the client.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 
 // Database functions for invoices
 

@@ -20,6 +20,58 @@ import MobileActionsBar from '../components/MobileActionsBar.tsx'; // New: Mobil
 import { PaletteIcon } from '../components/icons/PaletteIcon.tsx'; // New: Palette Icon
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 
+const CreateInvoicePageSkeleton: React.FC = () => {
+    return (
+        <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 animate-pulse">
+            {/* Left side: Form Skeleton */}
+            <div className="lg:w-2/5 xl:w-1/3 space-y-6">
+                <div className="h-14 bg-slate-200 rounded-lg"></div>
+                {/* Section Card Skeleton */}
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                    <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+                    <div className="h-10 bg-slate-200 rounded w-full"></div>
+                    <div className="flex gap-4">
+                        <div className="h-10 bg-slate-200 rounded w-1/2"></div>
+                        <div className="h-10 bg-slate-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+                {/* Another Section Card Skeleton */}
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                    <div className="h-6 bg-slate-200 rounded w-1/2"></div>
+                    <div className="h-10 bg-slate-200 rounded w-full"></div>
+                    <div className="h-20 bg-slate-200 rounded w-full"></div>
+                </div>
+                 {/* Items Section Card Skeleton */}
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                    <div className="h-6 bg-slate-200 rounded w-1/4"></div>
+                    <div className="h-16 bg-slate-200 rounded w-full"></div>
+                    <div className="h-16 bg-slate-200 rounded w-full"></div>
+                </div>
+            </div>
+
+            {/* Right side: Preview Skeleton */}
+            <div className="lg:w-3/5 xl:w-2/3">
+                <div className="bg-white shadow-xl rounded-lg h-[80vh]">
+                    <div className="p-4 md:p-8 space-y-6">
+                        <div className="flex justify-between">
+                            <div className="space-y-2 w-1/2">
+                                <div className="h-8 bg-slate-200 rounded w-3/4"></div>
+                                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                            </div>
+                            <div className="h-12 bg-slate-200 rounded w-1/4"></div>
+                        </div>
+                        <div className="h-4 bg-slate-200 rounded w-full mt-10"></div>
+                        <div className="h-4 bg-slate-200 rounded w-full"></div>
+                        <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+                        <div className="h-40 bg-slate-200 rounded w-full mt-10"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const LimitReachedModal: React.FC<{ plan: PlanData | null, onClose: () => void }> = ({ plan, onClose }) => (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[80] no-print backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="limit-modal-title">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md text-center p-8">
@@ -471,11 +523,7 @@ const CreateInvoicePage: React.FC = () => {
   }, []);
 
   if (authLoading || pageLoading) {
-    return (
-      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
-        <p className="text-xl text-neutral-dark">Loading Invoice Editor...</p>
-      </div>
-    );
+    return <CreateInvoicePageSkeleton />;
   }
 
   const isSaveDisabled = isLimitReached && !invoice.db_id;

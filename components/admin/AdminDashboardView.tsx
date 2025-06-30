@@ -28,16 +28,31 @@ const AdminDashboardView: React.FC = () => {
     <div>
       <h1 className="text-3xl font-bold text-neutral-darkest mb-8">Admin Dashboard</h1>
       
-      {loading && <p className="text-neutral-DEFAULT">Loading dashboard data...</p>}
+      {loading && (
+        <div className="animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white p-6 rounded-lg shadow-md h-28">
+                    <div className="h-4 bg-slate-200 rounded w-1/2 mb-4"></div>
+                    <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+                  </div>
+                ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-lg shadow-md h-48"></div>
+              <div className="bg-white p-6 rounded-lg shadow-md h-48"></div>
+            </div>
+        </div>
+      )}
       {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
 
-      {!loading && (
+      {!loading && !error && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard title="Total Users" value={stats?.totalUsers?.toLocaleString() ?? 'N/A'} isError={stats?.totalUsers === undefined && !error} />
-            <StatCard title="Active Subscriptions" value={stats?.activeSubscriptions?.toLocaleString() ?? 'N/A'} isError={stats?.activeSubscriptions === undefined && !error}/>
+            <StatCard title="Total Users" value={stats?.totalUsers?.toLocaleString() ?? 'N/A'} isError={stats?.totalUsers === undefined} />
+            <StatCard title="Active Subscriptions" value={stats?.activeSubscriptions?.toLocaleString() ?? 'N/A'} isError={stats?.activeSubscriptions === undefined}/>
             <StatCard title="Monthly Revenue (Simulated)" value={`$${stats?.monthlyRevenue?.toLocaleString() ?? '0'}`} />
-            <StatCard title="Invoices This Month" value={stats?.invoicesGeneratedThisMonth?.toLocaleString() ?? 'N/A'} isError={stats?.invoicesGeneratedThisMonth === undefined && !error}/>
+            <StatCard title="Invoices This Month" value={stats?.invoicesGeneratedThisMonth?.toLocaleString() ?? 'N/A'} isError={stats?.invoicesGeneratedThisMonth === undefined}/>
           </div>
           <p className="text-xs text-neutral-DEFAULT mb-6">
             Note: User-related stats (Total Users, Active Subscriptions) require backend Edge Functions to be implemented. Invoice count requires appropriate RLS.
