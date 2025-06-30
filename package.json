@@ -9,12 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.2",
+    "react": "^19.1.0",
+    "react-router-dom": "^7.6.3",
     "qrcode": "^1.5.4",
-    "@supabase/supabase-js": "^2.50.2",
-    "@supabase/gotrue-js": "^2.70.0"
+    "@supabase/supabase-js": "^2.50.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
