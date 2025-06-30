@@ -8,6 +8,7 @@ import { ArrowRightIcon } from '../components/icons/ArrowRightIcon.tsx'; // New 
 import { AbstractHeroPattern } from '../components/icons/AbstractHeroPattern.tsx'; // New SVG background
 import { ChevronDownIcon } from '../components/icons/ChevronDownIcon.tsx';
 import { ChevronUpIcon } from '../components/icons/ChevronUpIcon.tsx';
+import { CreditCardIcon } from '../components/icons/CreditCardIcon.tsx';
 
 // Using a generic document/template icon for "Beautiful Templates"
 const TemplateIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -55,7 +56,7 @@ const HomePage: React.FC = () => {
             Craft Stunning Invoices, <span className="text-primary-light block sm:inline">Effortlessly.</span>
           </h1>
           <p className="text-lg sm:text-xl text-slate-300/80 mb-10 max-w-2xl mx-auto">
-            Invoice Maker blends cutting-edge AI with beautiful design to help you create professional invoices in record time.
+            Invoice Maker blends beautiful design with powerful features to help you create professional invoices in record time.
           </p>
           <Link to="/create">
             <Button 
@@ -78,9 +79,9 @@ const HomePage: React.FC = () => {
         </p>
         <div className="grid md:grid-cols-3 gap-8">
           <FeatureCard 
-            title="AI-Powered Intelligence" 
-            description="Leverage Gemini API for smart item descriptions, professional notes, and insightful suggestions." 
-            icon={<SparklesIcon className="w-6 h-6" />}
+            title="Easy Payments" 
+            description="Generate UPI QR codes and payment links directly on your invoice. Get paid faster and easier." 
+            icon={<CreditCardIcon className="w-6 h-6" />}
           />
           <FeatureCard 
             title="Exquisite Templates" 
@@ -90,7 +91,7 @@ const HomePage: React.FC = () => {
           <FeatureCard 
             title="Seamless Experience" 
             description="Intuitive interface, easy customization, and quick PDF downloads. Share with a click." 
-            icon={<DownloadIcon className="w-6 h-6" />} // Could use a more generic "Easy" icon
+            icon={<DownloadIcon className="w-6 h-6" />}
           />
         </div>
       </section>
@@ -111,7 +112,7 @@ const HomePage: React.FC = () => {
            <div className="relative bg-white p-6 rounded-lg shadow-lg z-10">
                <div className="flex items-center text-primary-DEFAULT font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-DEFAULT text-white mr-3">2</span> CUSTOMIZE</div>
                <h3 className="text-lg font-semibold mb-2">Add Your Details</h3>
-               <p className="text-sm text-neutral-DEFAULT">Fill in your items, client info, and payment details. Use our AI for a little help!</p>
+               <p className="text-sm text-neutral-DEFAULT">Fill in your items, client info, and payment details. Add your own branding.</p>
            </div>
            <div className="relative bg-white p-6 rounded-lg shadow-lg z-10">
                <div className="flex items-center text-primary-DEFAULT font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-DEFAULT text-white mr-3">3</span> SEND</div>
@@ -163,7 +164,7 @@ const HomePage: React.FC = () => {
                  <h2 className="text-3xl sm:text-4xl font-bold text-neutral-darkest mb-12">Loved by Freelancers & Businesses</h2>
                  <div className="grid md:grid-cols-3 gap-8 text-left">
                      <div className="bg-white p-6 rounded-lg shadow-lg">
-                         <p className="text-neutral-DEFAULT mb-4">"This is a game-changer! The AI suggestions save me so much time writing descriptions. My invoices have never looked better."</p>
+                         <p className="text-neutral-DEFAULT mb-4">"This is a game-changer! The templates are beautiful and my invoices have never looked better."</p>
                          <p className="font-semibold text-neutral-darkest">Alex R.</p>
                          <p className="text-sm text-primary-DEFAULT">Freelance Designer</p>
                      </div>
@@ -187,9 +188,6 @@ const HomePage: React.FC = () => {
            <div className="max-w-2xl mx-auto">
                 <FaqItem question="Is Invoice Maker really free?">
                     <p>Yes! Our free plan is perfect for those just starting out. It allows you to create up to 3 invoices per month and access basic templates. For unlimited invoices and premium features, you can upgrade to our Pro plan.</p>
-                </FaqItem>
-                <FaqItem question="How does the AI suggestion feature work?">
-                    <p>We use the powerful Google Gemini API. When you provide a keyword for an item or a context for a note, we send a secure request to the AI, which then generates professional and relevant text suggestions to help you fill out your invoice faster.</p>
                 </FaqItem>
                  <FaqItem question="Can I use my own logo?">
                     <p>Absolutely! You can upload your own logo or paste an image URL. It will appear on your selected invoice template, helping you maintain a consistent and professional brand image.</p>

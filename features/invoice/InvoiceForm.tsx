@@ -7,7 +7,6 @@ import Textarea from '../../components/common/Textarea.tsx';
 import Button from '../../components/common/Button.tsx';
 import InvoiceItemRow from './InvoiceItemRow.tsx';
 import { PlusIcon } from '../../components/icons/PlusIcon.tsx';
-import { SparklesIcon } from '../../components/icons/SparklesIcon.tsx';
 import Select from '../../components/common/Select.tsx';
 import { DEFAULT_CURRENCY } from '../../constants.ts';
 import PaymentTools from './PaymentTools.tsx'; 
@@ -27,9 +26,6 @@ interface InvoiceFormProps {
   onAddItem: () => void;
   onRemoveItem: (itemId:string) => void;
   onDiscountChange: (type: 'percentage' | 'fixed', value: number) => void;
-  onSuggestDescription: (itemId: string, currentDescription: string, keyword: string) => Promise<void>;
-  onSuggestNote: (context: string) => Promise<void>;
-  isGenerating: Record<string, boolean>;
   onUpiDetailsGenerated: (link: string, qrDataUrl: string) => void;
   temporaryLogoUrl: string | null; 
   onTemporaryLogoChange: (logoDataUrl: string | null) => void; 
@@ -71,15 +67,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   onAddItem,
   onRemoveItem,
   onDiscountChange,
-  onSuggestDescription,
-  onSuggestNote,
-  isGenerating,
   onUpiDetailsGenerated,
   temporaryLogoUrl,
   onTemporaryLogoChange,
   onOpenTemplateModal, // Destructure new prop
 }) => {
-  const [noteSuggestionContext, setNoteSuggestionContext] = useState('');
   const [logoUrlInput, setLogoUrlInput] = useState('');
 
   const handleGenericChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, key: keyof InvoiceData) => {
@@ -235,8 +227,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             currency={invoice.currency || DEFAULT_CURRENCY}
             onItemChange={onItemChange}
             onRemoveItem={onRemoveItem}
-            onSuggestDescription={onSuggestDescription}
-            isGenerating={isGenerating[`desc-${item.id}`] || false}
           />
         ))}
         <Button onClick={onAddItem} variant="ghost" leftIcon={<PlusIcon className="w-4 h-4" />}>Add Item</Button>
@@ -270,26 +260,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
       <SectionCard title="Notes & Terms" initialOpen={false} isCollapsible={true}>
         <Textarea label="Notes" id="notes" value={invoice.notes || ''} onChange={(e) => handleGenericChange(e, 'notes')} />
-        <div className="flex items-center gap-2 mt-2">
-            <Input 
-              placeholder="Context for AI note (e.g. project completion)"
-              value={noteSuggestionContext}
-              onChange={(e) => setNoteSuggestionContext(e.target.value)}
-              wrapperClassName="flex-grow !mb-0"
-              className="!mb-0"
-              aria-label="Context for AI note suggestion"
-            />
-            <Button 
-                onClick={() => onSuggestNote(noteSuggestionContext)} 
-                variant="ghost" 
-                size="sm"
-                disabled={isGenerating['notes']}
-                leftIcon={<SparklesIcon className="w-4 h-4" />}
-                title="Suggest note with AI"
-            >
-                {isGenerating['notes'] ? 'Generating...' : 'Suggest'}
-            </Button>
-        </div>
         <Textarea label="Terms & Conditions" id="terms" value={invoice.terms || ''} onChange={(e) => handleGenericChange(e, 'terms')} className="mt-4" />
       </SectionCard>
 

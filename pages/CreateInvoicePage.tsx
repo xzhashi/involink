@@ -9,7 +9,6 @@ import Button from '../components/common/Button.tsx';
 import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
 import { ShareIcon } from '../components/icons/ShareIcon.tsx';
 import { WhatsAppIcon } from '../components/icons/WhatsAppIcon.tsx';
-import { suggestItemDescriptions, suggestInvoiceNote } from '../services/geminiService.ts';
 import { calculateInvoiceTotal } from '../utils.ts';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx'; // Import usePlans
@@ -100,7 +99,6 @@ const CreateInvoicePage: React.FC = () => {
   const initialTemplateIdFromState = location.state?.initialTemplateId as string | undefined;
 
   const [invoice, setInvoice] = useState<InvoiceData>(() => ({...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`}));
-  const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local_saved'>('idle');
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared' | 'error' | 'not_supported'>('idle');
   const [pageLoading, setPageLoading] = useState(true);
@@ -437,57 +435,6 @@ const CreateInvoicePage: React.FC = () => {
   };
 
 
-  const handleGeminiSuggestDescription = async (itemId: string, currentDescription: string, keyword: string) => {
-    const effectiveKeyword = keyword.trim() || currentDescription.trim();
-    if (!effectiveKeyword) {
-      alert("Please enter a keyword or have some existing description for AI suggestions.");
-      return;
-    }
-    setIsGenerating(prev => ({ ...prev, [`desc-${itemId}`]: true }));
-    try {
-      const suggestions = await suggestItemDescriptions(effectiveKeyword);
-      if (suggestions && suggestions.length > 0) {
-        const validSuggestion = suggestions.find(s => !s.toLowerCase().includes("error"));
-        if (validSuggestion) {
-            handleItemChange(itemId, 'description', validSuggestion);
-        } else if (suggestions[0]) {
-             handleItemChange(itemId, 'description', suggestions[0]);
-             if (suggestions[0].toLowerCase().includes("error")) {
-                alert(suggestions[0]);
-             }
-        } else {
-            alert("No suggestions found. Try a different keyword.");
-        }
-      } else {
-        alert("No suggestions found. Try a different keyword.");
-      }
-    } catch (error) {
-      console.error("Gemini suggestion error:", error);
-      alert("Failed to get suggestions. Please check your API key or network.");
-    } finally {
-      setIsGenerating(prev => ({ ...prev, [`desc-${itemId}`]: false }));
-    }
-  };
-  
-  const handleGeminiSuggestNote = async (context: string) => {
-    const currentNotes = invoice.notes || "";
-    const effectiveContext = context.trim() || currentNotes.trim() || "general thank you for business";
-    
-    setIsGenerating(prev => ({ ...prev, notes: true }));
-    try {
-      const suggestion = await suggestInvoiceNote(effectiveContext);
-      if (suggestion.toLowerCase().includes("error")) {
-        alert(suggestion);
-      }
-      handleInvoiceChange('notes', suggestion);
-    } catch (error) {
-      console.error("Gemini suggestion error for note:", error);
-      alert("Failed to get note suggestion. Please check your API key or network.");
-    } finally {
-      setIsGenerating(prev => ({ ...prev, notes: false }));
-    }
-  };
-
   const handleCreateNew = () => {
     if (isLimitReached) {
         setShowLimitModal(true);
@@ -550,9 +497,6 @@ const CreateInvoicePage: React.FC = () => {
                 onAddItem={addItem}
                 onRemoveItem={removeItem}
                 onDiscountChange={handleDiscountChange}
-                onSuggestDescription={handleGeminiSuggestDescription}
-                onSuggestNote={handleGeminiSuggestNote}
-                isGenerating={isGenerating}
                 onUpiDetailsGenerated={handleUpiDetailsGenerated}
                 temporaryLogoUrl={temporaryLogoUrl}
                 onTemporaryLogoChange={handleTemporaryLogoChange}
