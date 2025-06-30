@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'https://esm.sh/react-dom@^19.1.0/client?target=es2022';
+import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
