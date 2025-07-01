@@ -1,6 +1,7 @@
 
 
-import { AdminDashboardStats, AdminUser, PlanData } from '../types.ts';
+
+import { AdminDashboardStats, AdminUser, PlanData, Payment } from '../types.ts';
 import { supabase } from './supabaseClient.ts'; 
 
 // --- Helper to get start and end of current month for DB queries ---
@@ -13,12 +14,16 @@ const getMonthDateRange = () => {
 
 const handleInvokeError = (error: any, context: string): Error => {
   if (error.message.includes("Failed to fetch") || error.message.includes("network error")) {
-      return new Error(`A network error occurred while trying to ${context}. This is often a CORS issue. Please check the following in your Supabase project:
-1. Go to 'Edge Functions' -> select the function -> 'Settings' -> 'CORS headers' and ensure 'Access-Control-Allow-Origin' is set to '*' or your app's domain.
-2. If using a custom domain, verify that the 'SUPABASE_URL' environment variable for the function is set to your custom domain URL, not the default '.supabase.co' URL.`);
+      return new Error(`A network error occurred while trying to ${context}. This is often a CORS issue. Please check your Supabase project's Edge Function CORS settings and ensure environment variables are correctly set.`);
   }
-  const contextError = (error as any).context?.message;
-  return new Error(`Failed to ${context}: ${contextError || error.message}.`);
+  // Try to get the specific error message from the function's JSON response body
+  const detailedError = error?.context?.error;
+  
+  // If a detailed error message exists in the response, use it.
+  // Otherwise, fall back to the generic error message from the client library.
+  const message = typeof detailedError === 'string' ? detailedError : (error.message || `An unknown error occurred while trying to ${context}.`);
+  
+  return new Error(message);
 };
 
 
@@ -68,7 +73,12 @@ export const fetchAdminDashboardStats = async (): Promise<AdminDashboardStats> =
 // --- User Management ---
 
 export const fetchAllUsersAdmin = async (): Promise<AdminUser[]> => {
-  const { data, error } = await supabase.functions.invoke('admin-list-users');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Admin not authenticated.");
+
+  const { data, error } = await supabase.functions.invoke('admin-list-users', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
   
   if (error) {
     throw handleInvokeError(error, "list users");
@@ -83,8 +93,12 @@ export const fetchAllUsersAdmin = async (): Promise<AdminUser[]> => {
 
 
 export const inviteUserAdmin = async (email: string, planId: string): Promise<{ user: AdminUser | null; error: string | null }> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { user: null, error: "Admin not authenticated."};
+
   const { data, error } = await supabase.functions.invoke('admin-invite-user', {
-    body: { email, planId }
+    body: { email, planId },
+    headers: { Authorization: `Bearer ${session.access_token}` },
   });
 
   if (error) {
@@ -94,8 +108,12 @@ export const inviteUserAdmin = async (email: string, planId: string): Promise<{ 
 };
 
 export const updateUserAdmin = async (userId: string, updates: Partial<AdminUser['raw_user_meta_data']>) : Promise<{ user: AdminUser | null; error: string | null }> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { user: null, error: "Admin not authenticated."};
+
   const { data, error } = await supabase.functions.invoke('admin-update-user', {
-    body: { userId, updates }
+    body: { userId, updates },
+    headers: { Authorization: `Bearer ${session.access_token}` },
   });
   if (error) {
     return { user: null, error: handleInvokeError(error, "update user").message };
@@ -104,8 +122,12 @@ export const updateUserAdmin = async (userId: string, updates: Partial<AdminUser
 };
 
 export const deleteUserAdmin = async (userId: string): Promise<{ success: boolean; error: string | null }> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { success: false, error: "Admin not authenticated."};
+
   const { data, error } = await supabase.functions.invoke('admin-delete-user', {
-    body: { userId }
+    body: { userId },
+    headers: { Authorization: `Bearer ${session.access_token}` },
   });
    if (error) {
     return { success: false, error: handleInvokeError(error, "delete user").message };
@@ -172,4 +194,71 @@ export const deletePlanAdmin = async (planId: string): Promise<{ success: boolea
     return { success: false, error: error.message };
   }
   return { success: true, error: null };
+};
+
+// --- Payment Management ---
+export const fetchPaymentsAdmin = async (): Promise<Payment[]> => {
+  // Admin functions should use the service role to bypass RLS
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching payments:", error);
+    throw new Error(error.message || "Could not fetch payment records.");
+  }
+  return data || [];
+};
+
+// --- Integration Settings ---
+
+export const fetchRazorpaySettings = async (): Promise<{ keyId: string | null; isSecretSet: boolean; error: string | null }> => {
+  const { data: keyIdData, error: keyIdError } = await supabase
+    .from('app_config')
+    .select('value')
+    .eq('key', 'RAZORPAY_KEY_ID')
+    .single();
+
+  if (keyIdError && keyIdError.code !== 'PGRST116') { // Ignore "not found" error
+    return { keyId: null, isSecretSet: false, error: "Failed to fetch Razorpay Key ID. Ensure the 'app_config' table exists and has correct RLS policies for admin reads. " + keyIdError.message };
+  }
+
+  const { data: secretData, error: secretError } = await supabase
+    .from('app_config')
+    .select('key')
+    .eq('key', 'RAZORPAY_KEY_SECRET')
+    .single();
+  
+  if (secretError && secretError.code !== 'PGRST116') {
+    // don't block on this error, just report it
+    console.error("Failed to check for Razorpay Key Secret:", secretError.message);
+  }
+
+  return {
+    keyId: keyIdData?.value || null,
+    isSecretSet: !!secretData,
+    error: null,
+  };
+};
+
+export const updateRazorpaySettings = async (keyId: string, keySecret: string): Promise<{ success: boolean; error: string | null }> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { success: false, error: "Admin not authenticated." };
+
+  // Only pass the secret if it's a new value, not an empty string
+  const body: { keyId: string; keySecret?: string } = { keyId };
+  if (keySecret) {
+    body.keySecret = keySecret;
+  }
+
+  const { data, error } = await supabase.functions.invoke('admin-update-payment-keys', {
+    body,
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+
+  if (error) {
+    return { success: false, error: handleInvokeError(error, "update payment keys").message };
+  }
+  return { success: data?.success || false, error: data?.error || null };
 };

@@ -1,11 +1,13 @@
 
 
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { HomeIcon } from '../icons/HomeIcon.tsx'; // Placeholder, use appropriate icons
 import { UsersIcon } from '../icons/UsersIcon.tsx';
 import { ListBulletIcon } from '../icons/ListBulletIcon.tsx';
 import { CreditCardIcon } from '../icons/CreditCardIcon.tsx';
+import { KeyIcon } from '../icons/KeyIcon.tsx';
 
 const AdminSidebar: React.FC = () => {
   const commonLinkClasses = "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-150";
@@ -44,7 +46,13 @@ const AdminSidebar: React.FC = () => {
           <CreditCardIcon className="w-5 h-5 mr-3" />
           Payments
         </NavLink>
-        {/* Add more admin links here */}
+        <NavLink 
+          to="integrations"
+          className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses} mr-2 md:mr-0 whitespace-nowrap`}
+        >
+          <KeyIcon className="w-5 h-5 mr-3" />
+          Integrations
+        </NavLink>
       </nav>
     </div>
   );

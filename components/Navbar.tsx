@@ -14,6 +14,7 @@ import { MenuIcon } from './icons/MenuIcon.tsx';
 import { XMarkIcon } from './icons/XMarkIcon.tsx';
 import { DashboardIcon } from './icons/DashboardIcon.tsx';
 import { FilePlusIcon } from './icons/FilePlusIcon.tsx';
+import { InstallIcon } from './icons/InstallIcon.tsx';
 
 const Navbar: React.FC = () => {
   const { user, logout, loading, isAdmin } = useAuth();
@@ -24,6 +25,41 @@ const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault();
+        setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+        setInstallPrompt(null);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) {
+        return;
+    }
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+    } else {
+        console.log('User dismissed the install prompt');
+    }
+    setInstallPrompt(null);
+  };
 
   const closeMenus = () => {
     setUserDropdownOpen(false);
@@ -156,6 +192,17 @@ const Navbar: React.FC = () => {
             {/* Right side Actions */}
             <div className="flex items-center space-x-4">
               <div className="hidden md:flex items-center space-x-4">
+                {installPrompt && (
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={handleInstallClick}
+                    leftIcon={<InstallIcon className="w-4 h-4"/>}
+                    title="Install app to your device"
+                  >
+                    Install App
+                  </Button>
+                )}
                 {loading ? (
                   <div className="w-24 h-8 bg-slate-200 rounded-md animate-pulse"></div>
                 ) : user ? (
@@ -229,6 +276,18 @@ const Navbar: React.FC = () => {
             {/* Links */}
             <nav className="flex-grow p-4 space-y-1.5">
               {renderNavLinks(true)}
+              {installPrompt && (
+                  <button
+                      onClick={() => {
+                          handleInstallClick();
+                          closeMenus();
+                      }}
+                      className="flex items-center w-full px-3 py-3 text-base font-medium text-neutral-700 hover:bg-slate-100 rounded-md transition-colors"
+                  >
+                      <InstallIcon className="w-5 h-5 mr-3 text-secondary-DEFAULT"/>
+                      Install App
+                  </button>
+              )}
             </nav>
 
             {/* Auth Actions */}

@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { PlanData } from '../types.ts';
 import { useAuth } from './AuthContext.tsx';
@@ -117,23 +118,35 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
 
     try {
-      // If payment data is provided, verify it first.
-      if (paymentData) {
-        await verifyPayment({ ...paymentData, planId });
-      }
+        const targetPlan = plans.find(p => p.id === planId);
+        if (!targetPlan) throw new Error("Selected plan not found.");
 
-      // If verification is successful (or not needed), update the user's plan
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { planId: planId, status: 'Active' }
-      });
-      
-      if (updateError) {
-        throw updateError;
-      }
-      // The onAuthStateChange listener in AuthContext will trigger a user update,
-      // which in turn will update currentUserPlan via the useEffect above.
+        // For paid plans, verify payment on the backend. 
+        // The backend function is responsible for updating the user's plan.
+        if (paymentData && targetPlan.price !== '0') {
+            const verificationResult = await verifyPayment({ ...paymentData, planId });
+            if (!verificationResult || !verificationResult.success) {
+                throw new Error(verificationResult?.message || "Payment verification failed on the server.");
+            }
+        }
+        
+        // After successful backend verification OR for free plans,
+        // we trigger a client-side update. This call ensures that the
+        // local user session is updated with the new `planId`, which then
+        // triggers the onAuthStateChange listener in AuthContext, refreshing the UI.
+        const { error: updateError } = await supabase.auth.updateUser({
+            data: { planId: planId, status: 'Active' }
+        });
+
+        if (updateError) {
+            // This could happen if the user's session expired between steps.
+            throw new Error(`Failed to sync plan on client: ${updateError.message}`);
+        }
+
     } catch(err: any) {
        setError(err.message || "An error occurred while updating your plan.");
+       // Re-throw the error so the calling component (e.g., PricingPage) knows about it
+       throw err;
     } finally {
        setProcessing(false);
     }
