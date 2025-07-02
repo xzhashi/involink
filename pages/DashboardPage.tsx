@@ -12,6 +12,7 @@ import { ReceiptPercentIcon } from '../components/icons/ReceiptPercentIcon.tsx';
 import { BanknotesIcon } from '../components/icons/BanknotesIcon.tsx';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon.tsx';
 import { ChatBubbleLeftRightIcon } from '../components/icons/ChatBubbleLeftRightIcon.tsx';
+import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 
 const DashboardPageSkeleton: React.FC = () => (
     <div className="space-y-8 animate-pulse">
@@ -74,11 +75,22 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const { data: invoices, error: invoiceError } = await supabase
-          .from('invoices')
-          .select('status, invoice_data_json, type, invoice_number')
-          .eq('user_id', user.id);
-        if (invoiceError) throw invoiceError;
+        const [invoicesResponse, clientsResponse] = await Promise.all([
+          supabase
+            .from('invoices')
+            .select('status, invoice_data_json, type, invoice_number')
+            .eq('user_id', user.id),
+          supabase
+            .from('clients')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+        ]);
+
+        if (invoicesResponse.error) throw invoicesResponse.error;
+        if (clientsResponse.error) throw clientsResponse.error;
+
+        const invoices = invoicesResponse.data || [];
+        const clientCount = clientsResponse.count || 0;
 
         let unpaidCount = 0;
         let revenue = 0;
@@ -102,16 +114,10 @@ const DashboardPage: React.FC = () => {
             }
         });
 
-        const { count: clientCount, error: clientError } = await supabase
-          .from('clients')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        if (clientError) throw clientError;
-
         setStats({
           unpaidInvoices: unpaidCount,
           totalRevenue: revenue,
-          totalClients: clientCount || 0,
+          totalClients: clientCount,
           totalQuotes: quoteCount,
           unpaidAmount: unpaidAmount,
         });
@@ -143,18 +149,21 @@ const DashboardPage: React.FC = () => {
   
   return (
     <div className="space-y-10">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-neutral-800">Hello, {getFirstName()}!</h1>
-          <p className="text-neutral-500 mt-1">Here's your business overview for today.</p>
-        </div>
-        <Link to="/settings" className="flex-shrink-0" title="Go to settings">
-          <img 
-              src={`https://api.dicebear.com/8.x/avataaars/svg?seed=${user?.email || 'default'}`} 
-              alt="User Avatar" 
-              className="h-12 w-12 rounded-full border-2 border-white shadow-md hover:ring-2 hover:ring-primary transition-all"
-          />
-        </Link>
+      <header className="flex flex-wrap items-center gap-4">
+          <Link to="/settings" className="flex-shrink-0" title="Go to settings">
+              <img 
+                  src={`https://api.dicebear.com/8.x/avataaars/svg?seed=${user?.email || 'default'}`} 
+                  alt="User Avatar" 
+                  className="h-14 w-14 rounded-full border-2 border-white shadow-lg hover:ring-2 hover:ring-purple-400 transition-all"
+              />
+          </Link>
+          <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800 flex items-center gap-2">
+                  Hello, {getFirstName()}! 
+                  <SparklesIcon className="w-7 h-7 text-purple-500 opacity-80"/>
+              </h1>
+              <p className="text-neutral-500 mt-1">Here's your business overview for today.</p>
+          </div>
       </header>
       
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">

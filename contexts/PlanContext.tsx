@@ -15,7 +15,7 @@ interface PlanContextType {
   // For Admin plan management
   plans: PlanData[];
   getPlans: () => PlanData[]; 
-  addPlanContext: (plan: Omit<PlanData, 'created_at' | 'updated_at' | 'id'> & { id?: string }) => Promise<{ success: boolean; error?: string | null }>;
+  addPlanContext: (plan: Omit<PlanData, 'created_at' | 'updated_at'>) => Promise<{ success: boolean; error?: string | null }>;
   updatePlanContext: (plan: PlanData) => Promise<{ success: boolean; error?: string | null }>;
   deletePlanContext: (planId: string) => Promise<{ success: boolean; error?: string | null }>;
   loading: boolean;
@@ -157,7 +157,7 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return [...plans].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
   };
 
-  const addPlanContext = async (plan: Omit<PlanData, 'created_at' | 'updated_at' | 'id'> & { id?: string }) => {
+  const addPlanContext = async (plan: Omit<PlanData, 'created_at' | 'updated_at'>) => {
     setLoading(true); 
     setError(null);
     const { plan: newPlan, error: apiError } = await createPlanAdmin(plan);

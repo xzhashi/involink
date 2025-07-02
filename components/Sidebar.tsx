@@ -11,9 +11,10 @@ import { ChartBarIcon } from './icons/ChartBarIcon.tsx';
 import { CalendarDaysIcon } from './icons/CalendarDaysIcon.tsx';
 import { FilePlusIcon } from './icons/FilePlusIcon.tsx';
 import { CogIcon } from './icons/CogIcon.tsx';
+import { ShieldCheckIcon } from './icons/ShieldCheckIcon.tsx';
 
 const Sidebar: React.FC = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, isAdmin } = useAuth();
 
     const navItems = [
         { to: '/dashboard', icon: DashboardIcon, label: 'Overview' },
@@ -55,6 +56,18 @@ const Sidebar: React.FC = () => {
                     {item.label}
                 </NavLink>
             ))}
+            {isAdmin && (
+              <>
+                <div className="pt-2 mt-4 border-t border-slate-200"></div>
+                 <NavLink
+                    to="/admin"
+                    className={({ isActive }) => `${commonLink} ${isActive ? 'bg-rose-500 text-white' : 'text-neutral-600 hover:bg-rose-100 hover:text-rose-600'}`}
+                  >
+                    <ShieldCheckIcon className="w-5 h-5 mr-3" />
+                    Admin Panel
+                  </NavLink>
+              </>
+            )}
         </div>
       </nav>
 

@@ -91,12 +91,12 @@ const RecentInvoices: React.FC = () => {
         <div className="space-y-3">
             {invoices.map(invoice => (
                 <Link to={`/invoice/${invoice.db_id}`} key={invoice.db_id} className="block p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-neutral-200/80">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2">
                         <div>
                             <p className="font-semibold text-neutral-800">{invoice.id}</p>
                             <p className="text-sm text-neutral-500">To: {invoice.recipient.name}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="flex items-center justify-between w-full sm:w-auto sm:flex-col sm:items-end sm:gap-y-1">
                            <p className="font-semibold text-neutral-800">{invoice.currency || DEFAULT_CURRENCY} {calculateInvoiceTotal(invoice).toFixed(2)}</p>
                            <StatusBadge status={invoice.status} onStatusChange={() => {}} />
                         </div>

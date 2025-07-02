@@ -1,5 +1,3 @@
-
-
 import { createClient } from '@supabase/supabase-js';
 import { InvoiceData, InvoiceDataJson, InvoiceType, InvoiceStatus, Client, Attachment } from '../types.ts';
 import { INITIAL_CUSTOMIZATION_STATE } from '../constants.ts';
@@ -68,6 +66,31 @@ export const deleteClient = async (clientId: string): Promise<{ error: any }> =>
 // --- Attachments ---
 const ATTACHMENT_BUCKET = 'invoice-attachments';
 
+export const uploadCompanyLogo = async (file: File, userId: string): Promise<string> => {
+    // Use a static name to overwrite the existing logo, simplifying management.
+    const filePath = `public/${userId}/logo.png`; 
+    const { error: uploadError } = await supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true, // Overwrite if file exists
+        });
+
+    if (uploadError) {
+        console.error("Error uploading company logo:", uploadError);
+        throw uploadError;
+    }
+
+    const { data } = supabase.storage.from(ATTACHMENT_BUCKET).getPublicUrl(filePath);
+
+    if (!data.publicUrl) {
+        throw new Error("Could not get public URL for uploaded logo.");
+    }
+    // To bypass browser cache after an upload, append a timestamp as a query parameter.
+    return `${data.publicUrl}?t=${new Date().getTime()}`;
+};
+
+
 export const uploadAttachment = async (file: File, userId: string, invoiceId: string): Promise<Attachment> => {
   const filePath = `${userId}/${invoiceId}/${file.name}`;
   const { error } = await supabase.storage.from(ATTACHMENT_BUCKET).upload(filePath, file);
@@ -96,40 +119,25 @@ export const deleteAttachment = async (filePath: string): Promise<{ success: boo
 // Converts client-side InvoiceData to what's stored in Supabase
 const toSupabaseInvoiceFormat = (invoice: InvoiceData) => {
   const { db_id, user_id, id, ...jsonData } = invoice;
+  // This function ensures the `is_public` flag is set on the top-level column for RLS,
+  // and also within the JSONB for data integrity and portability.
   return {
     invoice_number: id,
     user_id,
     type: invoice.type,
     status: invoice.status,
     client_id: invoice.client_id,
-    is_public: invoice.is_public, // Make sure top-level is_public is passed
+    is_public: invoice.is_public, // This is the critical top-level field
     recurring_frequency: invoice.recurring_frequency,
     recurring_next_issue_date: invoice.recurring_next_issue_date,
     recurring_end_date: invoice.recurring_end_date,
     recurring_status: invoice.recurring_status,
     recurring_template_id: invoice.recurring_template_id,
     attachments: invoice.attachments,
-    invoice_data_json: {
-      date: jsonData.date,
-      dueDate: jsonData.dueDate,
-      sender: jsonData.sender,
-      recipient: jsonData.recipient,
-      items: jsonData.items,
-      notes: jsonData.notes,
-      terms: jsonData.terms,
-      taxRate: jsonData.taxRate,
-      discount: jsonData.discount,
-      currency: jsonData.currency,
-      selectedTemplateId: jsonData.selectedTemplateId,
-      manualPaymentLink: jsonData.manualPaymentLink,
-      has_branding: jsonData.has_branding,
-      is_public: jsonData.is_public,
-      upiId: jsonData.upiId,
-      customization: jsonData.customization,
-      attachments: jsonData.attachments,
-    }
+    invoice_data_json: { ...jsonData } // The rest of the data, including is_public, goes here
   };
 };
+
 
 // Converts Supabase row to client-side InvoiceData
 const fromSupabaseInvoiceFormat = (row: any): InvoiceData => {
@@ -151,7 +159,7 @@ const fromSupabaseInvoiceFormat = (row: any): InvoiceData => {
     selectedTemplateId: jsonData.selectedTemplateId || 'modern',
     manualPaymentLink: jsonData.manualPaymentLink || '',
     has_branding: jsonData.has_branding === undefined ? true : jsonData.has_branding,
-    is_public: row.is_public || false,
+    is_public: row.is_public || false, // Reads from the reliable top-level column
     upiId: jsonData.upiId || '',
     customization: { ...INITIAL_CUSTOMIZATION_STATE, ...(jsonData.customization || {}) },
     attachments: Array.isArray(row.attachments) ? row.attachments : (Array.isArray(jsonData.attachments) ? jsonData.attachments : []),
@@ -360,4 +368,14 @@ export const fetchReportsData = async () => {
     if (clientError) throw clientError;
 
     return { invoices, clients };
+};
+
+// --- Contact Form Submissions ---
+export const saveContactSubmission = async (submission: { name: string; email: string; subject: string; message: string; }): Promise<{ error: any }> => {
+    const { error } = await supabase
+        .from('contact_submissions')
+        .insert([
+            { ...submission, is_read: false }
+        ]);
+    return { error };
 };

@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 // Adding user_metadata to Supabase User type definition
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -8,8 +6,10 @@ export type User = SupabaseUser & {
   user_metadata: {
     planId?: string;
     status?: 'Active' | 'Suspended' | 'Invited';
-    role?: 'admin' | 'user'; // Added role
-    [key: string]: any; // Allow other metadata
+    role?: 'admin' | 'user';
+    company_details?: CompanyDetails;
+    default_currency?: string;
+    [key: string]: any;
   };
 };
 
@@ -170,13 +170,17 @@ export interface AdminUser {
   raw_user_meta_data?: { 
     planId?: string;
     status?: 'Active' | 'Suspended' | 'Invited';
-    role?: 'admin' | 'user'; // Added role
+    role?: 'admin' | 'user';
+    company_details?: CompanyDetails;
+    default_currency?: string;
     [key: string]: any; 
   };
   user_metadata?: { 
     planId?: string;
     status?: 'Active' | 'Suspended' | 'Invited';
-    role?: 'admin' | 'user'; // Added role
+    role?: 'admin' | 'user';
+    company_details?: CompanyDetails;
+    default_currency?: string;
     [key: string]: any;
   };
 }
@@ -200,4 +204,15 @@ export interface Payment {
   order_id: string;
   signature?: string;
   created_at?: string;
+}
+
+// For Contact Form Submissions
+export interface ContactSubmission {
+  id: string;
+  created_at: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  is_read: boolean;
 }

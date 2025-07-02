@@ -1,11 +1,14 @@
 
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext.tsx';
 import { DashboardIcon } from './icons/DashboardIcon.tsx';
 import { DocumentTextIcon } from './icons/DocumentTextIcon.tsx';
 import { PlusIcon } from './icons/PlusIcon.tsx';
 import { UsersIcon } from './icons/UsersIcon.tsx';
-import { CogIcon } from './icons/CogIcon.tsx';
+import { UserCircleIcon } from './icons/UserCircleIcon.tsx';
+import { ShieldCheckIcon } from './icons/ShieldCheckIcon.tsx';
 
 const NavItem: React.FC<{ to: string, icon: React.FC<any>, label: string }> = ({ to, icon: Icon, label }) => {
     const activeClass = "text-primary";
@@ -19,6 +22,7 @@ const NavItem: React.FC<{ to: string, icon: React.FC<any>, label: string }> = ({
 }
 
 const BottomNavbar: React.FC = () => {
+    const { isAdmin } = useAuth();
     return (
         <footer className="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200">
             <div className="grid h-full grid-cols-5 mx-auto">
@@ -32,7 +36,11 @@ const BottomNavbar: React.FC = () => {
                 </div>
 
                 <NavItem to="/clients" icon={UsersIcon} label="Clients" />
-                <NavItem to="/settings" icon={CogIcon} label="Settings" />
+                {isAdmin ? (
+                    <NavItem to="/admin" icon={ShieldCheckIcon} label="Admin" />
+                ) : (
+                    <NavItem to="/settings" icon={UserCircleIcon} label="Settings" />
+                )}
             </div>
         </footer>
     );

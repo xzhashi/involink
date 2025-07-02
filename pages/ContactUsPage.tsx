@@ -4,6 +4,7 @@ import Button from '../components/common/Button.tsx';
 import Input from '../components/common/Input.tsx';
 import Textarea from '../components/common/Textarea.tsx';
 import { EnvelopeIcon } from '../components/icons/EnvelopeIcon.tsx';
+import { saveContactSubmission } from '../services/supabaseClient.ts';
 
 const ContactUsPage: React.FC = () => {
     const [name, setName] = useState('');
@@ -11,14 +12,16 @@ const ContactUsPage: React.FC = () => {
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('sending');
-        // Simulate a network request
-        setTimeout(() => {
-            // In a real app, you would send this data to a backend service.
-            console.log({ name, email, subject, message });
+        setErrorMessage('');
+        try {
+            const { error } = await saveContactSubmission({ name, email, subject, message });
+            if (error) throw error;
+            
             setStatus('sent');
             // Clear form after a delay
             setTimeout(() => {
@@ -27,8 +30,12 @@ const ContactUsPage: React.FC = () => {
                 setSubject('');
                 setMessage('');
                 setStatus('idle');
-            }, 3000);
-        }, 1500);
+            }, 4000);
+        } catch (e: any) {
+            setStatus('error');
+            setErrorMessage(e.message || "An unexpected error occurred. Please try again.");
+            console.error("Failed to send message:", e);
+        }
     };
 
 
@@ -52,6 +59,9 @@ const ContactUsPage: React.FC = () => {
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {status === 'error' && (
+                                <p className="text-sm text-red-600 bg-red-100 p-3 rounded-md">{errorMessage}</p>
+                            )}
                             <Input
                                 label="Your Name"
                                 id="name"

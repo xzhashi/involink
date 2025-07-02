@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Button from '../common/Button.tsx';
 import Input from '../common/Input.tsx';
@@ -85,8 +86,7 @@ const AdminPlansView: React.FC = () => {
     if (isEditing) {
       result = await updatePlanContext(planToSave);
     } else {
-      // For adding, Omit Supabase-generated fields like created_at, updated_at if type requires.
-      // The current addPlanContext expects Omit<PlanData, 'created_at' | 'updated_at'> & { id?: string }
+      // The addPlanContext expects Omit<PlanData, 'created_at' | 'updated_at'>, so we remove those fields.
       const { created_at, updated_at, ...planForAdd } = planToSave;
       result = await addPlanContext(planForAdd);
     }
@@ -126,17 +126,9 @@ const AdminPlansView: React.FC = () => {
     let processedValue: string | number | boolean | null = value;
     if (type === 'checkbox') {
         processedValue = (e.target as HTMLInputElement).checked;
-    } else if (name === 'sort_order') { 
-        processedValue = parseInt(value, 10); 
-        if (isNaN(processedValue as number)) processedValue = 0;
-    } else if (name === 'invoice_limit') {
-        if (value.trim().toLowerCase() === 'null' || value.trim() === '') {
-            processedValue = null;
-        } else {
-            const numVal = parseInt(value, 10);
-            // Revert to old value if input is not a non-negative number
-            processedValue = isNaN(numVal) || numVal < 0 ? currentPlan.invoice_limit : numVal;
-        }
+    } else if (name === 'sort_order' || name === 'invoice_limit') { 
+        const numVal = parseInt(value, 10);
+        processedValue = isNaN(numVal) || numVal < 0 ? 0 : numVal;
     }
     setCurrentPlan({ ...currentPlan, [name]: processedValue });
   };
@@ -157,6 +149,15 @@ const AdminPlansView: React.FC = () => {
      if (!currentPlan || !currentPlan.features) return;
      const newFeatures = currentPlan.features.filter((_, i) => i !== index);
      setCurrentPlan({ ...currentPlan, features: newFeatures });
+  };
+
+  const handleUnlimitedInvoicesToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!currentPlan) return;
+    const isUnlimited = e.target.checked;
+    setCurrentPlan({
+      ...currentPlan,
+      invoice_limit: isUnlimited ? null : 0, // Reset to 0 when unchecked
+    });
   };
 
   if (plansContextLoading && contextPlans.length === 0) { 
@@ -244,6 +245,15 @@ const AdminPlansView: React.FC = () => {
             </div>
             {modalError && <p className="text-red-500 bg-red-100 p-2 rounded-md mb-3 text-sm">{modalError}</p>}
             <div className="overflow-y-auto pr-2 space-y-4 flex-grow thin-scrollbar">
+              <Input 
+                label="Plan ID (cannot be changed after creation)"
+                name="id"
+                value={currentPlan.id || ''}
+                onChange={handleModalInputChange}
+                required
+                disabled={isProcessing || isEditing}
+                className={isEditing ? 'bg-slate-100 cursor-not-allowed' : ''}
+              />
               <Input label="Plan Name" name="name" value={currentPlan.name || ''} onChange={handleModalInputChange} required disabled={isProcessing} />
               <div className="grid grid-cols-2 gap-4">
                 <Input label="Price (e.g., 15)" name="price" type="text" value={currentPlan.price || ''} onChange={handleModalInputChange} required disabled={isProcessing} />
@@ -260,7 +270,32 @@ const AdminPlansView: React.FC = () => {
                 ]}
                 disabled={isProcessing}
               />
-              <Input label="Invoice Limit" name="invoice_limit" type="text" value={currentPlan.invoice_limit === null ? 'null' : (currentPlan.invoice_limit ?? '').toString()} onChange={handleModalInputChange} placeholder="A number, or 'null' for unlimited" required disabled={isProcessing} />
+              <div>
+                <Input 
+                  label="Invoice Limit"
+                  name="invoice_limit"
+                  type="number"
+                  value={currentPlan.invoice_limit === null ? '' : (currentPlan.invoice_limit ?? 0).toString()}
+                  onChange={handleModalInputChange}
+                  placeholder={currentPlan.invoice_limit === null ? 'Unlimited' : "e.g., 3"}
+                  required
+                  disabled={isProcessing || currentPlan.invoice_limit === null}
+                  wrapperClassName={`transition-opacity ${currentPlan.invoice_limit === null ? 'opacity-50' : ''}`}
+                />
+                <div className="flex items-center -mt-2 mb-2">
+                  <input
+                    id="invoice_limit_unlimited"
+                    type="checkbox"
+                    checked={currentPlan.invoice_limit === null}
+                    onChange={handleUnlimitedInvoicesToggle}
+                    className="h-4 w-4 text-primary-DEFAULT focus:ring-primary-dark border-gray-300 rounded"
+                    disabled={isProcessing}
+                  />
+                  <label htmlFor="invoice_limit_unlimited" className="ml-2 block text-sm text-neutral-dark">
+                    Unlimited Invoices
+                  </label>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-dark mb-1">Features</label>
                 {currentPlan.features?.map((feature, index) => (

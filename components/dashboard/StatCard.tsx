@@ -34,7 +34,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, label, icon, variant 
           {icon}
         </div>
         <p className={`text-sm font-medium ${isPrimary ? 'text-neutral-400' : 'text-neutral-500'}`}>{title}</p>
-        <p className="text-3xl font-bold mt-1">{value}</p>
+        <p className="text-2xl sm:text-3xl font-bold mt-1">{value}</p>
         {label && <p className={`text-xs mt-1 ${isPrimary ? 'text-neutral-400' : 'text-neutral-500'}`}>{label}</p>}
       </div>
       {children}

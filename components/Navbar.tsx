@@ -66,7 +66,7 @@ const Navbar: React.FC = () => {
         onClick={closeMenus}
         className={({ isActive }) => `
           text-sm font-medium transition-colors duration-200
-          ${isActive ? 'text-primary' : 'text-neutral-DEFAULT hover:text-primary'}
+          ${isActive ? 'text-purple-600 font-semibold' : 'text-slate-600 hover:text-purple-600'}
         `}
       >
         {link.text}
@@ -152,13 +152,13 @@ const Navbar: React.FC = () => {
             
             <nav className="flex-grow p-4 space-y-4">
               {navLinks.map(link => (
-                  <NavLink key={link.to} to={link.to} onClick={closeMenus} className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? 'bg-secondary text-primary' : 'text-neutral-dark hover:bg-secondary'}`}>
+                  <NavLink key={link.to} to={link.to} onClick={closeMenus} className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? 'bg-purple-50 text-purple-700' : 'text-slate-700 hover:bg-slate-100'}`}>
                       {link.text}
                   </NavLink>
               ))}
               {installPrompt && (
-                  <button onClick={handleInstallClick} className="w-full flex items-center px-3 py-2 text-base font-medium text-neutral-dark hover:bg-secondary rounded-md">
-                      <InstallIcon className="w-5 h-5 mr-3 text-secondary-DEFAULT"/> Install App
+                  <button onClick={handleInstallClick} className="w-full flex items-center px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 rounded-md">
+                      <InstallIcon className="w-5 h-5 mr-3 text-slate-500"/> Install App
                   </button>
               )}
             </nav>

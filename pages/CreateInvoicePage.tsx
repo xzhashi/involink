@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
 import InvoiceForm from '../features/invoice/InvoiceForm.tsx';
@@ -104,11 +103,25 @@ const CreateInvoicePage: React.FC = () => {
 
   const getNewInvoiceState = useCallback(() => {
     const baseState = {...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`};
-    if (userCurrency && !currencyLoading) {
+    
+    // Override with user's saved preferences first
+    if (user?.user_metadata) {
+      if (user.user_metadata.company_details) {
+        // Merge, so any missing details in saved profile don't break it
+        baseState.sender = { ...baseState.sender, ...user.user_metadata.company_details };
+      }
+      // Set currency based on priority: user preference > location > default
+      if (user.user_metadata.default_currency) {
+        baseState.currency = user.user_metadata.default_currency;
+      } else if (userCurrency && !currencyLoading) {
         baseState.currency = userCurrency;
+      }
+    } else if (userCurrency && !currencyLoading) { // Fallback for users without metadata object
+      baseState.currency = userCurrency;
     }
+
     return baseState;
-  }, [userCurrency, currencyLoading]);
+  }, [user, userCurrency, currencyLoading]);
 
   const [invoice, setInvoice] = useState<InvoiceData>(getNewInvoiceState());
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local_saved'>('idle');

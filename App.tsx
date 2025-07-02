@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage.tsx';
@@ -18,6 +19,7 @@ import AdminUsersView from './components/admin/AdminUsersView.tsx';
 import AdminPlansView from './components/admin/AdminPlansView.tsx';
 import AdminPaymentsView from './components/admin/AdminPaymentsView.tsx';
 import AdminIntegrationsView from './components/admin/AdminIntegrationsView.tsx';
+import AdminMessagesView from './components/admin/AdminMessagesView.tsx';
 import PublicInvoicePage from './pages/PublicInvoicePage.tsx';
 import AboutUsPage from './pages/AboutUsPage.tsx';
 import ContactUsPage from './pages/ContactUsPage.tsx';
@@ -119,6 +121,7 @@ const App: React.FC = () => {
                 <Route path="plans" element={<AdminPlansView />} />
                 <Route path="payments" element={<AdminPaymentsView />} />
                 <Route path="integrations" element={<AdminIntegrationsView />} />
+                <Route path="messages" element={<AdminMessagesView />} />
               </Route>
               
               {/* Standalone routes without any layout */}

@@ -17,7 +17,7 @@ const AuthPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || "/create"; // Redirect after login
+  const from = location.state?.from?.pathname || "/dashboard"; // Redirect after login
 
   useEffect(() => {
     const rememberedEmail = localStorage.getItem('rememberedEmail');

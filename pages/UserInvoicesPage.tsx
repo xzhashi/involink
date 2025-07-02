@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx';
@@ -15,6 +15,11 @@ import { DEFAULT_CURRENCY } from '../constants.ts';
 import StatusBadge from '../components/common/StatusBadge.tsx';
 import { ShareIcon } from '../components/icons/ShareIcon.tsx';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon.tsx';
+import Select from '../components/common/Select.tsx';
+import Input from '../components/common/Input.tsx';
+import { calculateInvoiceTotal } from '../utils.ts';
+import { EnvelopeIcon } from '../components/icons/EnvelopeIcon.tsx';
+import { CopyIcon } from '../components/icons/CopyIcon.tsx';
 
 const UserInvoicesPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -28,6 +33,11 @@ const UserInvoicesPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'all'>('all');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [invoiceToShare, setInvoiceToShare] = useState<InvoiceData | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -51,6 +61,16 @@ const UserInvoicesPage: React.FC = () => {
 
     loadInvoices();
   }, [user, authLoading, navigate]);
+  
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(invoice => {
+        const statusMatch = statusFilter === 'all' || invoice.status === statusFilter;
+        const searchMatch = searchFilter === '' ||
+            invoice.recipient.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+            invoice.id.toLowerCase().includes(searchFilter.toLowerCase());
+        return statusMatch && searchMatch;
+    });
+  }, [invoices, statusFilter, searchFilter]);
 
   const handleDeleteClick = (invoice: InvoiceData) => {
     setInvoiceToDelete(invoice);
@@ -80,40 +100,80 @@ const UserInvoicesPage: React.FC = () => {
 
   const handleStatusChange = async (invoiceId: string, newStatus: InvoiceStatus) => {
     const originalInvoices = [...invoices];
-    // Optimistically update UI
     setInvoices(invoices.map(inv => inv.db_id === invoiceId ? { ...inv, status: newStatus } : inv));
     
     const { error } = await updateInvoiceStatus(invoiceId, newStatus);
     if (error) {
       setError(error.message);
-      // Revert UI on error
       setInvoices(originalInvoices);
     }
   };
   
-  const handleShare = async (invoice: InvoiceData) => {
-      if (!user || !invoice.db_id) return;
-      setProcessingId(invoice.db_id);
-      setError(null);
-      
-      try {
-          if (!invoice.is_public) {
-              const { success, error } = await makeInvoicePublic(invoice.db_id);
-              if (!success) throw error || new Error("Failed to make invoice public.");
-              // Optimistically update local state so we don't need to refetch
-              setInvoices(invoices.map(inv => inv.db_id === invoice.db_id ? { ...inv, is_public: true } : inv));
-          }
-
-          const shareUrl = `${window.location.origin}/#/view/invoice/${invoice.db_id}`;
-          await navigator.clipboard.writeText(shareUrl);
-          setCopiedId(invoice.db_id);
-          setTimeout(() => setCopiedId(null), 2500);
-      } catch (e: any) {
-          setError(e.message || 'Failed to share invoice.');
-      } finally {
-          setProcessingId(null);
-      }
+  const handleOpenShareModal = (invoice: InvoiceData) => {
+    setInvoiceToShare(invoice);
+    setShowShareModal(true);
+    setError(null);
+    setCopiedId(null);
   };
+
+  const prepareShareableLink = async (): Promise<string | null> => {
+    if (!user || !invoiceToShare?.db_id) {
+        setError('Invoice must be selected to share.');
+        return null;
+    }
+    setProcessingId(invoiceToShare.db_id);
+    let publicInvoice = { ...invoiceToShare };
+    if (!publicInvoice.is_public) {
+        const { success, error } = await makeInvoicePublic(publicInvoice.db_id);
+        if (error || !success) {
+            setError(error?.message || "Failed to make invoice public.");
+            setProcessingId(null);
+            return null;
+        }
+        setInvoices(invoices.map(inv => inv.db_id === publicInvoice.db_id ? { ...inv, is_public: true } : inv));
+        publicInvoice.is_public = true;
+    }
+    setProcessingId(null);
+    return `${window.location.origin}/#/view/invoice/${publicInvoice.db_id}`;
+  };
+
+  const handleCopyLinkFromModal = async () => {
+    const url = await prepareShareableLink();
+    if (!url || !invoiceToShare) return;
+    try {
+        await navigator.clipboard.writeText(url);
+        setCopiedId(invoiceToShare.db_id);
+        setTimeout(() => {
+            setShowShareModal(false);
+            setInvoiceToShare(null);
+            setCopiedId(null);
+        }, 1500);
+    } catch(err) {
+        setError("Failed to copy link.");
+    }
+  };
+
+  const handleSendEmailFromModal = async () => {
+    const url = await prepareShareableLink();
+    if (!url || !invoiceToShare) return;
+    const subject = `Invoice ${invoiceToShare.id} from ${invoiceToShare.sender.name}`;
+    const total = calculateInvoiceTotal(invoiceToShare);
+    const body = `Hello ${invoiceToShare.recipient.name || ''},\n\nPlease find your invoice online at the link below:\n${url}\n\nTotal Amount Due: ${invoiceToShare.currency} ${total.toFixed(2)}\nDue Date: ${new Date(invoiceToShare.dueDate).toLocaleDateString()}\n\nThank you!\n\nBest regards,\n${invoiceToShare.sender.name}`;
+    const mailtoLink = `mailto:${invoiceToShare.recipient.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
+    setShowShareModal(false);
+    setInvoiceToShare(null);
+  };
+
+  const statusOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'sent', label: 'Sent' },
+    { value: 'viewed', label: 'Viewed' },
+    { value: 'paid', label: 'Paid' },
+    { value: 'partially_paid', label: 'Partially Paid' },
+    { value: 'overdue', label: 'Overdue' },
+  ];
 
   if (authLoading || loadingInvoices) {
     return (
@@ -142,7 +202,7 @@ const UserInvoicesPage: React.FC = () => {
     );
   }
 
-  if (error && !showDeleteModal) { // Don't show page error if delete modal has its own error
+  if (error && !showDeleteModal) {
      return (
       <div className="text-center py-10">
         <p className="text-red-600 text-lg mb-4">{error}</p>
@@ -165,6 +225,30 @@ const UserInvoicesPage: React.FC = () => {
           </Button>
         </Link>
       </div>
+      
+       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input 
+                wrapperClassName="!mb-0"
+                placeholder="Search by ID or client name..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+            />
+            <Select 
+                wrapperClassName="!mb-0"
+                options={statusOptions}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as InvoiceStatus | 'all')}
+            />
+            <Button 
+                variant="ghost" 
+                onClick={() => { setStatusFilter('all'); setSearchFilter(''); }}
+                disabled={statusFilter === 'all' && searchFilter === ''}
+            >
+                Clear Filters
+            </Button>
+        </div>
+       </div>
 
       {invoices.length === 0 && !loadingInvoices ? (
         <div className="text-center py-12 bg-white shadow-md rounded-lg">
@@ -187,10 +271,10 @@ const UserInvoicesPage: React.FC = () => {
             </Link>
           </div>
         </div>
-      ) : (
+      ) : filteredInvoices.length > 0 ? (
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <ul role="list" className="divide-y divide-neutral-light">
-            {invoices.map((invoice) => (
+            {filteredInvoices.map((invoice) => (
               <li key={invoice.db_id} className="px-4 py-4 sm:px-6 hover:bg-neutral-lightest transition-colors duration-150">
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                   <div className="truncate">
@@ -203,8 +287,8 @@ const UserInvoicesPage: React.FC = () => {
                   </div>
                   <div className="ml-auto flex-shrink-0 flex items-center space-x-1 sm:space-x-2">
                      <StatusBadge status={invoice.status} onStatusChange={(newStatus) => handleStatusChange(invoice.db_id!, newStatus)} />
-                     <Button variant="ghost" size="sm" className="!px-2" onClick={() => handleShare(invoice)} disabled={processingId === invoice.db_id} title="Copy public link">
-                        {copiedId === invoice.db_id ? <CheckCircleIcon className="h-5 w-5 text-green-500" /> : <ShareIcon className="h-5 w-5 text-neutral-600" />}
+                     <Button variant="ghost" size="sm" className="!px-2" onClick={() => handleOpenShareModal(invoice)} disabled={processingId === invoice.db_id} title="Share Invoice">
+                        <ShareIcon className="h-5 w-5 text-neutral-600" />
                      </Button>
                     <Link to={`/invoice/${invoice.db_id}`} className="inline-flex items-center">
                       <Button variant="ghost" size="sm" className="!px-2" title="Edit Invoice">
@@ -231,13 +315,20 @@ const UserInvoicesPage: React.FC = () => {
                       Issued: {new Date(invoice.date).toLocaleDateString()}
                     </p>
                      <p className="text-xs text-neutral-800 font-semibold ml-4">
-                       {invoice.currency || DEFAULT_CURRENCY} {(invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) * (1 + (invoice.taxRate || 0)/100) - (invoice.discount?.type === 'fixed' ? invoice.discount.value : (invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) * (invoice.discount?.value || 0))/100)).toFixed(2)}
+                       {invoice.currency || DEFAULT_CURRENCY} {calculateInvoiceTotal(invoice).toFixed(2)}
                    </p>
                   </div>
                 </div>
               </li>
             ))}
           </ul>
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-white shadow-md rounded-lg">
+          <h3 className="text-lg font-medium text-neutral-darkest">No Invoices Found</h3>
+          <p className="mt-1 text-sm text-neutral-DEFAULT">
+              Your search or filter criteria did not match any invoices.
+          </p>
         </div>
       )}
 
@@ -268,6 +359,50 @@ const UserInvoicesPage: React.FC = () => {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+      
+      {showShareModal && invoiceToShare && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[70] no-print backdrop-blur-sm" onClick={() => setShowShareModal(false)}>
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-neutral-darkest">Share Invoice {invoiceToShare.id}</h3>
+                    <button 
+                        onClick={() => setShowShareModal(false)} 
+                        className="text-neutral-500 hover:text-neutral-700 p-1 rounded-full hover:bg-neutral-light"
+                        disabled={processingId === invoiceToShare.db_id}
+                    >
+                        <XMarkIcon className="w-6 h-6" />
+                    </button>
+                </div>
+                {error && <p className="text-red-500 bg-red-100 p-2 rounded-md mb-3 text-sm">{error}</p>}
+                
+                <div className="space-y-3">
+                    <Button 
+                        variant="secondary"
+                        className="w-full !justify-start !py-3"
+                        leftIcon={<CopyIcon className="w-5 h-5 mr-3 text-neutral-600"/>}
+                        onClick={handleCopyLinkFromModal}
+                        disabled={processingId === invoiceToShare.db_id}
+                    >
+                        {copiedId === invoiceToShare.db_id ? 'Copied to clipboard!' : 'Copy Public Link'}
+                    </Button>
+                    <Button 
+                        variant="secondary"
+                        className="w-full !justify-start !py-3"
+                        leftIcon={<EnvelopeIcon className="w-5 h-5 mr-3 text-neutral-600"/>}
+                        onClick={handleSendEmailFromModal}
+                        disabled={processingId === invoiceToShare.db_id}
+                    >
+                        Send Link via Email
+                    </Button>
+                </div>
+                 <div className="mt-4 text-right">
+                     <Button variant="ghost" onClick={() => setShowShareModal(false)} disabled={processingId === invoiceToShare.db_id}>
+                        Cancel
+                    </Button>
+                 </div>
+            </div>
         </div>
       )}
     </div>
