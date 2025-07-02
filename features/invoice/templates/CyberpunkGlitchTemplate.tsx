@@ -35,12 +35,12 @@ const CyberpunkGlitchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
       <section className="grid grid-cols-2 gap-4 mb-8 text-xs">
         <div className="border border-pink-500/50 p-3">
           <h3 className={`font-bold uppercase ${neonPink}`}>CLIENT_DATA:</h3>
-          <p>> {invoice.recipient.name}</p>
-          <p>> {invoice.recipient.address}</p>
+          <p>&gt; {invoice.recipient.name}</p>
+          <p>&gt; {invoice.recipient.address}</p>
         </div>
         <div className="border border-cyan-400/50 p-3 text-right">
-          <p>> DATE_ISSUED: {new Date(invoice.date).toLocaleDateString()}</p>
-          <p>> {isQuote ? 'VALID_UNTIL' : 'PAYMENT_DUE'}: {new Date(invoice.dueDate).toLocaleDateString()}</p>
+          <p>&gt; DATE_ISSUED: {new Date(invoice.date).toLocaleDateString()}</p>
+          <p>&gt; {isQuote ? 'VALID_UNTIL' : 'PAYMENT_DUE'}: {new Date(invoice.dueDate).toLocaleDateString()}</p>
         </div>
       </section>
 
@@ -73,8 +73,8 @@ const CyberpunkGlitchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
             <div className="border border-cyan-400/50 p-3 text-xs">
               <h3 className={`font-bold uppercase ${neonCyan}`}>PAYMENT_TERMINAL:</h3>
               {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="UPI QR Code" className="bg-white p-1 my-2" style={{width: '75px', height: '75px'}}/>}
-              {upiLink && <a href={upiLink} target="_blank" rel="noopener noreferrer" className="block text-pink-400 hover:underline">> EXECUTE_UPI_PAYMENT.EXE</a>}
-              {invoice.manualPaymentLink && <a href={invoice.manualPaymentLink} target="_blank" rel="noopener noreferrer" className="block text-green-400 hover:underline mt-1">> ACCESS_MANUAL_LINK</a>}
+              {upiLink && <a href={upiLink} target="_blank" rel="noopener noreferrer" className="block text-pink-400 hover:underline">&gt; EXECUTE_UPI_PAYMENT.EXE</a>}
+              {invoice.manualPaymentLink && <a href={invoice.manualPaymentLink} target="_blank" rel="noopener noreferrer" className="block text-green-400 hover:underline mt-1">&gt; ACCESS_MANUAL_LINK</a>}
             </div>
           )}
         </div>
@@ -87,8 +87,8 @@ const CyberpunkGlitchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
       </section>
 
       <footer className="mt-8 pt-4 border-t-2 border-dashed border-cyan-400/50 text-xs text-cyan-400/70">
-        {invoice.notes && <p className="mb-2">> NOTE: {invoice.notes}</p>}
-        {invoice.terms && <p>> TERMS: {invoice.terms}</p>}
+        {invoice.notes && <p className="mb-2">&gt; NOTE: {invoice.notes}</p>}
+        {invoice.terms && <p>&gt; TERMS: {invoice.terms}</p>}
         <p className="text-center mt-6">TRANSACTION COMPLETE. AWAITING PAYMENT.</p>
         {userPlan?.has_branding && (
             <p className="text-center mt-4 text-gray-600 print:text-gray-400">

@@ -1,13 +1,12 @@
 
 
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { InvoiceItem } from '../../types.ts';
 import Input from '../../components/common/Input.tsx';
 import Button from '../../components/common/Button.tsx';
 import { TrashIcon } from '../../components/icons/TrashIcon.tsx';
-import { suggestItemDescriptions } from '../../services/geminiService.ts';
 import { SparklesIcon } from '../../components/icons/SparklesIcon.tsx';
-import { ArrowPathIcon } from '../../components/icons/ArrowPathIcon.tsx';
 
 interface InvoiceItemRowProps {
   item: InvoiceItem;
@@ -18,45 +17,20 @@ interface InvoiceItemRowProps {
 }
 
 const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, onItemChange, onRemoveItem }) => {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSuggesting, setIsSuggesting] = useState(false);
-  const suggestionBoxRef = useRef<HTMLDivElement>(null);
+  const [showComingSoon, setShowComingSoon] = useState(false);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     onItemChange(item.id, name as keyof InvoiceItem, name === 'quantity' || name === 'unitPrice' ? parseFloat(value) || 0 : value);
-    if (name === 'description' && suggestions.length > 0) {
-      setSuggestions([]); // Clear old suggestions on new input
-      setShowSuggestions(false);
-    }
   };
   
-  const handleSuggest = async () => {
-    if (!item.description.trim() || isSuggesting) return;
-    setIsSuggesting(true);
-    setSuggestions([]);
-    setShowSuggestions(true); // Show box with loading indicator
-    const result = await suggestItemDescriptions(item.description);
-    setSuggestions(result);
-    setIsSuggesting(false);
+  const handleSuggest = () => {
+    if (showComingSoon) return;
+    setShowComingSoon(true);
+    setTimeout(() => {
+      setShowComingSoon(false);
+    }, 2000);
   };
-  
-  const handleSuggestionClick = (suggestion: string) => {
-    onItemChange(item.id, 'description', suggestion);
-    setShowSuggestions(false);
-    setSuggestions([]);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionBoxRef.current && !suggestionBoxRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const total = item.quantity * item.unitPrice;
 
@@ -64,7 +38,7 @@ const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, 
     <div className="py-4 border-b border-neutral-light last:border-b-0">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2 items-start">
         {/* Description */}
-        <div className="md:col-span-5 relative" ref={suggestionBoxRef}>
+        <div className="md:col-span-5 relative">
           <Input
             label={index === 0 ? "Description" : undefined}
             name="description"
@@ -80,32 +54,15 @@ const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, 
             variant="ghost"
             size="sm"
             onClick={handleSuggest}
-            disabled={isSuggesting || !item.description.trim()}
+            disabled={!item.description.trim()}
             className="!absolute right-1 top-[2px] sm:top-1.5 !p-1.5 focus:ring-offset-0"
-            title="Suggest descriptions with AI"
+            title="Suggest descriptions with AI (Coming Soon)"
           >
-            {isSuggesting ? <ArrowPathIcon className="w-4 h-4 text-primary animate-spin"/> : <SparklesIcon className="w-4 h-4 text-primary"/>}
+            <SparklesIcon className="w-4 h-4 text-primary"/>
           </Button>
-
-          {showSuggestions && (
-            <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-              {isSuggesting && <p className="px-4 py-2 text-sm text-gray-500">Generating ideas...</p>}
-              {!isSuggesting && suggestions.length > 0 && (
-                 <ul className="py-1 text-sm text-gray-700">
-                  {suggestions.map((s, i) => (
-                    <li key={i}>
-                      <button
-                        type="button"
-                        onClick={() => handleSuggestionClick(s)}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                      >
-                        {s}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-               {!isSuggesting && suggestions.length === 0 && <p className="px-4 py-2 text-sm text-gray-500">No suggestions found. Try a different keyword.</p>}
+          {showComingSoon && (
+            <div className="absolute right-10 top-1.5 bg-slate-800 text-white text-xs px-2 py-1 rounded-md shadow-lg animate-fade-in-out z-20">
+                Coming Soon!
             </div>
           )}
         </div>
