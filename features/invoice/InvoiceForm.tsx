@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, ChangeEvent } from 'react';
 import { InvoiceData, InvoiceItem, Attachment } from '../../types.ts';
 import Input from '../../components/common/Input.tsx';
@@ -19,7 +17,6 @@ import { PaletteIcon } from '../../components/icons/PaletteIcon.tsx';
 import { WrenchScrewdriverIcon } from '../../components/icons/WrenchScrewdriverIcon.tsx';
 import { CURRENCY_OPTIONS } from '../../currencies.ts';
 import { TrashIcon } from '../../components/icons/TrashIcon.tsx';
-
 
 interface InvoiceFormProps {
   invoice: InvoiceData;
@@ -309,7 +306,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
       <SectionCard title="Notes & Terms" initialOpen={false} isCollapsible={true}>
         <Textarea label="Notes" id="notes" value={invoice.notes || ''} onChange={(e) => handleGenericChange(e, 'notes')} />
-        <Textarea label="Terms & Conditions" id="terms" value={invoice.terms || ''} onChange={(e) => handleGenericChange(e, 'terms')} className="mt-4" />
+        <Textarea label="Terms & Conditions" id="terms" value={invoice.terms || ''} onChange={(e) => handleGenericChange(e, 'terms')} />
       </SectionCard>
 
       <SectionCard title="Custom Payment Link" initialOpen={false} isCollapsible={true}>

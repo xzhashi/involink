@@ -1,12 +1,9 @@
 
-
-
-import React, { useState } from 'react';
+import React from 'react';
 import { InvoiceItem } from '../../types.ts';
 import Input from '../../components/common/Input.tsx';
 import Button from '../../components/common/Button.tsx';
 import { TrashIcon } from '../../components/icons/TrashIcon.tsx';
-import { SparklesIcon } from '../../components/icons/SparklesIcon.tsx';
 
 interface InvoiceItemRowProps {
   item: InvoiceItem;
@@ -17,19 +14,9 @@ interface InvoiceItemRowProps {
 }
 
 const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, onItemChange, onRemoveItem }) => {
-  const [showComingSoon, setShowComingSoon] = useState(false);
-  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     onItemChange(item.id, name as keyof InvoiceItem, name === 'quantity' || name === 'unitPrice' ? parseFloat(value) || 0 : value);
-  };
-  
-  const handleSuggest = () => {
-    if (showComingSoon) return;
-    setShowComingSoon(true);
-    setTimeout(() => {
-      setShowComingSoon(false);
-    }, 2000);
   };
 
   const total = item.quantity * item.unitPrice;
@@ -38,7 +25,7 @@ const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, 
     <div className="py-4 border-b border-neutral-light last:border-b-0">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2 items-start">
         {/* Description */}
-        <div className="md:col-span-5 relative">
+        <div className="md:col-span-5">
           <Input
             label={index === 0 ? "Description" : undefined}
             name="description"
@@ -49,22 +36,6 @@ const InvoiceItemRow: React.FC<InvoiceItemRowProps> = ({ item, index, currency, 
             wrapperClassName="!mb-1"
             aria-label={`Description for item ${index + 1}`}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleSuggest}
-            disabled={!item.description.trim()}
-            className="!absolute right-1 top-[2px] sm:top-1.5 !p-1.5 focus:ring-offset-0"
-            title="Suggest descriptions with AI (Coming Soon)"
-          >
-            <SparklesIcon className="w-4 h-4 text-primary"/>
-          </Button>
-          {showComingSoon && (
-            <div className="absolute right-10 top-1.5 bg-slate-800 text-white text-xs px-2 py-1 rounded-md shadow-lg animate-fade-in-out z-20">
-                Coming Soon!
-            </div>
-          )}
         </div>
 
         {/* Quantity */}
