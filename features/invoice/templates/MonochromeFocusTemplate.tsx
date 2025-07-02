@@ -1,5 +1,7 @@
 
 
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +15,7 @@ const MonochromeFocusTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   // Accent color can be customized here, e.g., 'text-red-500', 'border-blue-500'
   const accentColor = 'text-blue-500'; // Example accent: blue
@@ -36,7 +39,7 @@ const MonochromeFocusTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
           <p className="text-sm text-gray-700 print:text-black">{invoice.sender.address}</p>
         </div>
         <div className="text-right">
-          <h1 className="text-5xl font-black uppercase text-black">Invoice</h1>
+          <h1 className="text-5xl font-black uppercase text-black">{isQuote ? 'Quote' : 'Invoice'}</h1>
           <p className="text-md text-gray-600 print:text-black"># {invoice.id}</p>
         </div>
       </header>
@@ -50,7 +53,7 @@ const MonochromeFocusTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
         </div>
         <div className="text-left md:text-right">
           <p><strong className="text-gray-600 font-medium print:text-black">Date Issued:</strong> <span className="text-black">{new Date(invoice.date).toLocaleDateString()}</span></p>
-          <p><strong className="text-gray-600 font-medium print:text-black">Due Date:</strong> <span className="text-black">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
+          <p><strong className="text-gray-600 font-medium print:text-black">{isQuote ? 'Valid Until:' : 'Due Date:'}</strong> <span className="text-black">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
         </div>
       </section>
 
@@ -81,7 +84,7 @@ const MonochromeFocusTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
         <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="border border-gray-200 p-4 rounded space-y-3 print:border-gray-300">
               <h4 className={`font-semibold ${accentColor} mb-2 text-md print:text-black`}>Payment</h4>
               {qrCodeDataUrl && (
@@ -135,7 +138,7 @@ const MonochromeFocusTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
             </div>
           )}
           <div className={`flex justify-between p-3 border-t-2 ${accentBorderColor} mt-2 print:border-black`}>
-            <span className="font-bold text-xl text-black">TOTAL DUE</span>
+            <span className="font-bold text-xl text-black uppercase">{isQuote ? 'Total' : 'Total Due'}</span>
             <span className="font-bold text-xl text-black">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>

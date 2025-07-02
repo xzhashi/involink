@@ -21,6 +21,7 @@ const PricingPage: React.FC = () => {
   const { plans, loading: plansLoading, currentUserPlan, changePlan: changePlanContext, processing: planProcessing } = usePlans();
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
 
   const handleChoosePlan = async (planId: string, amount: string, currency: string) => {
     if (!user) {
@@ -121,9 +122,11 @@ const PricingPage: React.FC = () => {
     );
   }
 
+  const displayedPlans = plans.filter(p => p.id === 'free_tier' || p.billing_cycle === billingCycle);
+
   return (
     <div className="container mx-auto px-4 py-12">
-      <div className="text-center mb-16">
+      <div className="text-center mb-12">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-neutral-darkest mb-4">
           Find the Perfect Plan
         </h1>
@@ -134,11 +137,31 @@ const PricingPage: React.FC = () => {
          <p className="text-sm text-accent-DEFAULT mt-2">(Payment processing via Razorpay is now live for INR transactions.)</p>
       </div>
 
+      <div className="flex justify-center mb-12">
+        <div className="bg-slate-100 p-1 rounded-full flex items-center space-x-1">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${billingCycle === 'monthly' ? 'bg-white text-primary-dark shadow' : 'text-neutral-600 hover:bg-slate-200/50'}`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingCycle('annually')}
+            className={`relative px-6 py-2 rounded-full text-sm font-semibold transition-colors ${billingCycle === 'annually' ? 'bg-white text-primary-dark shadow' : 'text-neutral-600 hover:bg-slate-200/50'}`}
+          >
+            Annually
+            <span className="absolute -top-2 -right-2 bg-secondary-DEFAULT text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              Save 20%
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        {plans.map(plan => {
+        {displayedPlans.map(plan => {
           const isCurrent = currentUserPlan?.id === plan.id;
           const isProcessingThisPlan = processingPlanId === plan.id || (planProcessing && currentUserPlan?.id === plan.id);
-          const currency = plan.price_suffix.toLowerCase().includes('mo') ? 'INR' : 'USD'; // Simple logic, assumes INR for paid plans
+          const currency = 'INR';
 
           return (
             <div 
@@ -155,7 +178,7 @@ const PricingPage: React.FC = () => {
                 {plan.price !== '0' && <span className="text-lg font-normal text-neutral-DEFAULT">{plan.price_suffix}</span>}
               </p>
               <p className="text-xs text-neutral-DEFAULT mb-6">
-                {plan.name === 'Free' ? 'Perfect for starting out' : plan.name === 'Pro' ? 'For growing businesses' : 'For large scale operations'}
+                {plan.id === 'free_tier' ? 'Perfect for starting out' : billingCycle === 'monthly' ? 'For growing businesses' : 'Billed annually'}
               </p>
               
               <ul className="text-left space-y-3 mb-8 text-neutral-dark text-sm flex-grow">

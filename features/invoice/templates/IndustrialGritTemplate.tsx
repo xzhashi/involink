@@ -1,5 +1,7 @@
 
 
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +15,7 @@ const IndustrialGritTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   // Using a stencil-like or strong sans-serif font
   const mainFont = "'Roboto Condensed', sans-serif"; // Example, ensure loaded if specific
@@ -32,7 +35,7 @@ const IndustrialGritTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
           <p className="text-xs text-slate-400 print:text-slate-600">{invoice.sender.address}</p>
         </div>
         <div className="text-right">
-          <h1 className="text-5xl font-extrabold uppercase text-orange-400 print:text-orange-600">INVOICE</h1>
+          <h1 className="text-5xl font-extrabold uppercase text-orange-400 print:text-orange-600">{isQuote ? 'Quote' : 'Invoice'}</h1>
           <p className="text-md text-slate-300 print:text-slate-700">REF: {invoice.id}</p>
         </div>
       </header>
@@ -46,7 +49,7 @@ const IndustrialGritTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
         </div>
         <div className="bg-slate-700/50 p-4 border border-slate-600 text-left md:text-right print:bg-slate-100 print:border-slate-300">
           <p className="mb-1"><strong className="text-slate-400 font-medium print:text-slate-500">ISSUE DATE:</strong> <span className="text-slate-100 print:text-black">{new Date(invoice.date).toLocaleDateString()}</span></p>
-          <p><strong className="text-slate-400 font-medium print:text-slate-500">DUE DATE:</strong> <span className="text-slate-100 print:text-black">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
+          <p><strong className="text-slate-400 font-medium print:text-slate-500">{isQuote ? 'VALID UNTIL:' : 'DUE DATE:'}</strong> <span className="text-slate-100 print:text-black">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
         </div>
       </section>
 
@@ -77,7 +80,7 @@ const IndustrialGritTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
         <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="bg-slate-700/50 border border-slate-600 p-4 space-y-3 text-center md:text-left print:bg-slate-100 print:border-slate-300">
               <h4 className="font-semibold text-orange-400 mb-2 text-md print:text-orange-600">PAYMENT INFO</h4>
               {qrCodeDataUrl && (
@@ -131,7 +134,7 @@ const IndustrialGritTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
             </div>
           )}
           <div className="flex justify-between p-2 bg-orange-500 text-slate-900 mt-2 shadow-md print:bg-orange-500 print:text-black">
-            <span className="font-black text-lg uppercase">TOTAL</span>
+            <span className="font-black text-lg uppercase">{isQuote ? 'TOTAL:' : 'TOTAL DUE:'}</span>
             <span className="font-black text-lg">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>

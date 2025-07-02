@@ -1,5 +1,8 @@
 
 
+
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +16,7 @@ const VintageScrollTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     // Intended background: Parchment texture image.
@@ -31,11 +35,11 @@ const VintageScrollTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
           </header>
 
           <div className="flex justify-between items-start mb-10">
-            <h2 className="text-3xl font-semibold text-amber-800" style={{ fontFamily: "'Georgia', serif" }}>Invoice</h2>
+            <h2 className="text-3xl font-semibold text-amber-800 uppercase" style={{ fontFamily: "'Georgia', serif" }}>{isQuote ? 'Quotation' : 'Invoice'}</h2>
             <div className="text-right text-sm text-amber-700">
-                <p><strong>Invoice No.:</strong> {invoice.id}</p>
+                <p><strong>{isQuote ? 'Quote No.:' : 'Invoice No.:'}</strong> {invoice.id}</p>
                 <p><strong>Date Issued:</strong> {new Date(invoice.date).toLocaleDateString()}</p>
-                <p><strong>Payment Due:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
+                <p><strong>{isQuote ? 'Valid Until:' : 'Payment Due:'}</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
             </div>
           </div>
 
@@ -73,7 +77,7 @@ const VintageScrollTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
           {/* Totals & Payment Section */}
           <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
             <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-              {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+              {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
                 <div className="border border-amber-400 p-4 bg-amber-600/10 space-y-3 text-center md:text-left print:bg-slate-50">
                   <h4 className="font-semibold text-amber-700 mb-2 text-md tracking-wide">Remittance Advice</h4>
                   {qrCodeDataUrl && (
@@ -127,11 +131,26 @@ const VintageScrollTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
                 </div>
               )}
               <div className="flex justify-between pt-3 border-t-2 border-amber-600 mt-3">
-                <span className="font-bold text-xl text-amber-800">Grand Total:</span>
+                <span className="font-bold text-xl text-amber-800">{isQuote ? 'Grand Total:' : 'Total Due:'}</span>
                 <span className="font-bold text-xl text-amber-800">{invoice.currency} {total.toFixed(2)}</span>
               </div>
             </div>
           </section>
+
+           {invoice.attachments && invoice.attachments.length > 0 && (
+            <section className="mt-10 pt-6 border-t border-dashed border-amber-500 text-xs text-amber-700">
+                <h4 className="font-semibold text-amber-800 mb-1 tracking-wide">Accompanying Documents:</h4>
+                <ul className="list-disc list-inside space-y-1">
+                    {invoice.attachments.map(att => (
+                    <li key={att.name}>
+                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-amber-800 hover:text-black hover:underline">
+                        {att.name}
+                        </a>
+                    </li>
+                    ))}
+                </ul>
+            </section>
+          )}
 
           {(invoice.notes || invoice.terms) && (
           <section className="mt-10 pt-6 border-t border-dashed border-amber-500 text-xs text-amber-700">

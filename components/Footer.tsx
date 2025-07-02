@@ -1,12 +1,11 @@
-
 import React from 'react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-neutral-light border-t border-neutral-light mt-12 py-8 text-center text-neutral-DEFAULT text-sm no-print">
+    <footer className="bg-off-white border-t border-secondary mt-12 py-6 text-center text-neutral-DEFAULT text-xs no-print">
       <div className="container mx-auto px-4">
-        <p>&copy; {new Date().getFullYear()} Invoice Maker <span className="text-xs opacity-90">by LinkFC</span>. All rights reserved.</p>
-        <p className="mt-1">Built by LinkFC</p>
+        <p>&copy; {new Date().getFullYear()} Invoice Maker by LinkFC. All rights reserved.</p>
+        <p className="mt-1 opacity-75">Built by LinkFC</p>
       </div>
     </footer>
   );

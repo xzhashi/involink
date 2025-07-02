@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +12,7 @@ const ArtDecoTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     // Intended background: Subtle gold geometric pattern on black or deep jewel tone.
@@ -32,7 +32,7 @@ const ArtDecoTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
               <p className="text-xs text-slate-300 print:text-slate-600 max-w-xs">{invoice.sender.address}</p>
             </div>
             <div className="text-right">
-              <h1 className="text-5xl font-extrabold uppercase text-amber-400" style={{fontFamily: "'Cinzel Decorative', cursive"}}>Invoice</h1>
+              <h1 className="text-5xl font-extrabold uppercase text-amber-400" style={{fontFamily: "'Cinzel Decorative', cursive"}}>{isQuote ? 'Quote' : 'Invoice'}</h1>
               <p className="text-md text-slate-200 print:text-slate-700"># {invoice.id}</p>
             </div>
           </header>
@@ -46,7 +46,7 @@ const ArtDecoTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
             </div>
             <div className="bg-slate-800/50 p-4 rounded text-left md:text-right print:bg-slate-100">
               <p className="mb-1"><strong className="text-slate-400 font-medium print:text-slate-500">Date Issued:</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.date).toLocaleDateString()}</span></p>
-              <p><strong className="text-slate-400 font-medium print:text-slate-500">Due Date:</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
+              <p><strong className="text-slate-400 font-medium print:text-slate-500">{isQuote ? 'Valid Until:' : 'Due Date:'}</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
             </div>
           </section>
 
@@ -77,7 +77,7 @@ const ArtDecoTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
           {/* Totals & Payment Section */}
           <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
             <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-              {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+              {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
                 <div className="bg-slate-800/50 border border-amber-400/30 p-4 rounded space-y-3 text-center md:text-left print:bg-slate-100 print:border-slate-300">
                   <h4 className="font-semibold text-amber-300 mb-2 text-md print:text-amber-600">Payment Channels</h4>
                   {qrCodeDataUrl && (
@@ -131,32 +131,46 @@ const ArtDecoTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
                 </div>
               )}
               <div className="flex justify-between p-3 bg-amber-400 text-slate-900 rounded-sm mt-2 shadow-lg print:bg-amber-500 print:text-black">
-                <span className="font-bold text-xl uppercase">Total Due</span>
+                <span className="font-bold text-xl uppercase">{isQuote ? 'Total:' : 'Total Due'}</span>
                 <span className="font-bold text-xl">{invoice.currency} {total.toFixed(2)}</span>
               </div>
             </div>
           </section>
 
-          {(invoice.notes || invoice.terms) && (
-          <section className="mt-10 pt-6 border-t border-amber-400/30 text-xs text-slate-300 print:border-slate-300 print:text-slate-600">
-            {invoice.notes && (
-              <div className="mb-4 p-4 rounded bg-slate-800/50 print:bg-slate-100">
-                <h4 className="font-semibold text-amber-300 mb-1 print:text-amber-600">Notes:</h4>
-                <p className="whitespace-pre-wrap">{invoice.notes}</p>
-              </div>
-            )}
-            {invoice.terms && (
-              <div className="p-4 rounded bg-slate-800/50 print:bg-slate-100">
-                <h4 className="font-semibold text-amber-300 mb-1 print:text-amber-600">Terms & Conditions:</h4>
-                <p className="whitespace-pre-wrap">{invoice.terms}</p>
-              </div>
-            )}
-          </section>
+          {invoice.attachments && invoice.attachments.length > 0 && (
+            <section className="mt-10 pt-6 border-t border-amber-400/30 text-xs text-slate-300 print:border-slate-300 print:text-slate-600">
+                <h4 className="font-semibold text-amber-300 mb-1 print:text-amber-600">Attachments</h4>
+                 <ul className="list-disc list-inside space-y-1">
+                    {invoice.attachments.map(att => (
+                        <li key={att.name}>
+                            <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-amber-200 hover:text-white hover:underline print:text-amber-800">
+                            {att.name}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </section>
           )}
 
-          <footer className="text-center text-xs text-slate-400 mt-12 pt-6 border-t border-amber-400/30 print:border-slate-300 print:text-slate-500">
-            <p>Thank you for your esteemed patronage.</p>
-            <p style={{fontFamily: "'Cinzel', serif"}}>{invoice.sender.name}</p>
+          {(invoice.notes || invoice.terms) && (
+            <section className="mt-10 pt-6 border-t border-amber-400/30 text-xs text-slate-300 print:border-slate-300 print:text-slate-600">
+              {invoice.notes && (
+                <div className="mb-4">
+                  <h4 className="font-semibold text-amber-300 mb-1 print:text-amber-600">Notes:</h4>
+                  <p className="whitespace-pre-wrap">{invoice.notes}</p>
+                </div>
+              )}
+              {invoice.terms && (
+                <div>
+                  <h4 className="font-semibold text-amber-300 mb-1 print:text-amber-600">Terms & Conditions:</h4>
+                  <p className="whitespace-pre-wrap">{invoice.terms}</p>
+                </div>
+              )}
+            </section>
+          )}
+
+          <footer className="text-center text-xs text-slate-400 mt-12 pt-6 border-t border-amber-400/50 print:border-slate-300 print:text-slate-500">
+            <p>An invoice from {invoice.sender.name}</p>
             {userPlan?.has_branding && (
               <div className="text-center text-xs text-gray-500 mt-2 print:text-gray-400">
                 Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>

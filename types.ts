@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 // Adding user_metadata to Supabase User type definition
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -20,11 +22,48 @@ export interface CompanyDetails {
   logoUrl?: string; // Optional: URL for a company logo
 }
 
+export interface Client {
+  id: string; // Supabase UUID
+  user_id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface InvoiceItem {
   id: string; // This is a client-side UUID for React keys
   description: string;
   quantity: number;
   unitPrice: number;
+}
+
+export type InvoiceType = 'invoice' | 'quote' | 'recurring_template';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'partially_paid' | 'overdue' | 'viewed' | 'accepted' | 'declined';
+export type RecurringFrequency = 'weekly' | 'monthly' | 'yearly';
+export type RecurringStatus = 'active' | 'paused' | 'finished';
+
+export interface Attachment {
+  name: string;
+  url: string;
+  size: number;
+  filePath: string; // e.g., 'user-id/invoice-id/filename.pdf'
+}
+
+
+export interface CustomizationState {
+  primaryColor: string;
+  accentColor: string;
+  textColor: string;
+  backgroundColor: string;
+  headingFont: string;
+  bodyFont: string;
+  logoSize: number;
+  showLogo: boolean;
+  showNotes: boolean;
+  showTerms: boolean;
 }
 
 export interface InvoiceData {
@@ -44,8 +83,20 @@ export interface InvoiceData {
   selectedTemplateId: string;
   manualPaymentLink?: string; 
   has_branding?: boolean; 
-  is_public?: boolean; // New: For public shareable links
-  upiId?: string; // New: To store the UPI ID for QR code generation
+  is_public?: boolean; // For public shareable links
+  upiId?: string; // To store the UPI ID for QR code generation
+  customization?: CustomizationState;
+  attachments?: Attachment[];
+
+  // New fields for enhanced features
+  type: InvoiceType;
+  status: InvoiceStatus;
+  client_id?: string | null;
+  recurring_frequency?: RecurringFrequency | null;
+  recurring_next_issue_date?: string | null;
+  recurring_end_date?: string | null;
+  recurring_status?: RecurringStatus | null;
+  recurring_template_id?: string | null;
 }
 
 // This type represents how the invoice data (excluding db_id, user_id, id/invoice_number)
@@ -64,8 +115,10 @@ export interface InvoiceDataJson {
   selectedTemplateId: string;
   manualPaymentLink?: string;
   has_branding?: boolean;
-  is_public?: boolean; // New: For public shareable links
-  upiId?: string; // New: To store the UPI ID
+  is_public?: boolean;
+  upiId?: string;
+  customization?: CustomizationState;
+  attachments?: Attachment[];
 }
 
 export interface InvoiceTemplateProps {
@@ -73,6 +126,7 @@ export interface InvoiceTemplateProps {
   upiLink?: string;
   qrCodeDataUrl?: string;
   userPlan?: PlanData | null; // Pass the full plan object for more flexibility
+  customization?: CustomizationState;
 }
 
 export interface InvoiceTemplateInfo {
@@ -94,6 +148,7 @@ export interface PlanData {
   name: string; // e.g., 'Free', 'Pro'
   price: string; // e.g., '0', '15'
   price_suffix: string; // e.g., '', '/mo' (matches Supabase table)
+  billing_cycle: 'monthly' | 'annually';
   features: string[];
   cta_text: string; // matches Supabase table
   is_current?: boolean; // For display on pricing page, client-side only

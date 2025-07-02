@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
@@ -11,13 +13,14 @@ const MinimalistTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     <div className="p-8 font-sans bg-white text-gray-800 print:p-0">
       {/* Header */}
       <header className="flex justify-between items-start mb-10">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 uppercase tracking-wider">Invoice</h1>
+          <h1 className="text-4xl font-bold text-gray-900 uppercase tracking-wider">{isQuote ? 'Quote' : 'Invoice'}</h1>
           <p className="text-gray-600"># {invoice.id}</p>
         </div>
         <div className="text-right">
@@ -43,7 +46,7 @@ const MinimalistTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
         </div>
         <div className="text-right">
           <p><strong className="text-gray-600 font-medium">Date Issued:</strong> {new Date(invoice.date).toLocaleDateString()}</p>
-          <p><strong className="text-gray-600 font-medium">Due Date:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
+          <p><strong className="text-gray-600 font-medium">{isQuote ? 'Valid Until:' : 'Due Date:'}</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
         </div>
       </section>
 
@@ -74,7 +77,7 @@ const MinimalistTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start mb-10">
         <div className="w-full md:w-1/2 mb-6 md:mb-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="mt-4 pr-4">
               <h4 className="font-semibold text-gray-700 mb-2 text-md">Payment Details:</h4>
               {qrCodeDataUrl && (
@@ -129,12 +132,27 @@ const MinimalistTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
               </div>
             )}
             <div className="flex justify-between pt-2 border-t border-gray-300 mt-2">
-              <span className="font-bold text-lg text-gray-900">Total:</span>
+              <span className="font-bold text-lg text-gray-900">{isQuote ? 'Total Estimate:' : 'Total:'}</span>
               <span className="font-bold text-lg text-gray-900">{invoice.currency} {total.toFixed(2)}</span>
             </div>
           </div>
         </div>
       </section>
+
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <section className="mt-8 pt-5 border-t border-gray-200">
+          <h4 className="font-semibold text-gray-700 mb-2 text-md">Attachments</h4>
+          <ul className="list-disc list-inside text-sm">
+            {invoice.attachments.map(att => (
+              <li key={att.name}>
+                <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  {att.name} ({(att.size / 1024).toFixed(2)} KB)
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {(invoice.notes || invoice.terms) && (
       <section className="mt-10 pt-6 border-t border-gray-200 text-sm text-gray-600">

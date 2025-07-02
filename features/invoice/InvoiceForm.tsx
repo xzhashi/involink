@@ -1,7 +1,8 @@
 
 
+
 import React, { useState, ChangeEvent } from 'react';
-import { InvoiceData, InvoiceItem } from '../../types.ts';
+import { InvoiceData, InvoiceItem, Attachment } from '../../types.ts';
 import Input from '../../components/common/Input.tsx';
 import Textarea from '../../components/common/Textarea.tsx';
 import Button from '../../components/common/Button.tsx';
@@ -15,7 +16,9 @@ import { ChevronUpIcon } from '../../components/icons/ChevronUpIcon.tsx';
 import { UploadIcon } from '../../components/icons/UploadIcon.tsx'; 
 import { LinkIcon } from '../../components/icons/LinkIcon.tsx'; 
 import { PaletteIcon } from '../../components/icons/PaletteIcon.tsx'; 
+import { WrenchScrewdriverIcon } from '../../components/icons/WrenchScrewdriverIcon.tsx';
 import { CURRENCY_OPTIONS } from '../../currencies.ts';
+import { TrashIcon } from '../../components/icons/TrashIcon.tsx';
 
 
 interface InvoiceFormProps {
@@ -30,7 +33,12 @@ interface InvoiceFormProps {
   onUpiDetailsGenerated: (link: string, qrDataUrl: string) => void;
   temporaryLogoUrl: string | null; 
   onTemporaryLogoChange: (logoDataUrl: string | null) => void; 
-  onOpenTemplateModal: () => void; // New prop to open template modal
+  onOpenTemplateModal: () => void;
+  onOpenCustomizationModal: () => void;
+  onFileUpload: (files: FileList) => void;
+  onFileDelete: (file: Attachment) => void;
+  isUploading: boolean;
+  uploadError: string | null;
 }
 
 const SectionCard: React.FC<{ title: string; children: React.ReactNode; initialOpen?: boolean; isCollapsible?: boolean }> = ({ title, children, initialOpen = true, isCollapsible = true }) => { 
@@ -71,7 +79,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   onUpiDetailsGenerated,
   temporaryLogoUrl,
   onTemporaryLogoChange,
-  onOpenTemplateModal, // Destructure new prop
+  onOpenTemplateModal,
+  onOpenCustomizationModal,
+  onFileUpload,
+  onFileDelete,
+  isUploading,
+  uploadError
 }) => {
   const [logoUrlInput, setLogoUrlInput] = useState('');
 
@@ -117,7 +130,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-lg shadow">
+      <div className="bg-white p-4 rounded-lg shadow space-y-2">
         <Button 
             onClick={onOpenTemplateModal} 
             variant="secondary" 
@@ -126,6 +139,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         >
             Change Design / Template
         </Button>
+        {invoice.selectedTemplateId === 'custom' && (
+          <Button 
+            onClick={onOpenCustomizationModal} 
+            variant="ghost" 
+            className="w-full border-primary-light"
+            leftIcon={<WrenchScrewdriverIcon className="w-5 h-5"/>}
+          >
+            Customize Template
+          </Button>
+        )}
       </div>
 
       <SectionCard title="Invoice Details" initialOpen={true} isCollapsible={true}>
@@ -219,6 +242,43 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           />
         ))}
         <Button onClick={onAddItem} variant="ghost" leftIcon={<PlusIcon className="w-4 h-4" />}>Add Item</Button>
+      </SectionCard>
+      
+      <SectionCard title="Attachments" isCollapsible={true} initialOpen={false}>
+          <div className="space-y-3">
+              <div>
+                  <label htmlFor="attachments" className="block text-sm font-medium text-neutral-dark mb-1">Upload Files</label>
+                   <input 
+                    type="file" 
+                    id="attachments" 
+                    multiple
+                    onChange={(e) => e.target.files && onFileUpload(e.target.files)}
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-lightest file:text-primary-dark hover:file:bg-primary-light/30"
+                    disabled={isUploading}
+                  />
+                  <p className="text-xs text-neutral-DEFAULT mt-1">Attach contracts, timesheets, etc. Max 5MB per file.</p>
+                  {isUploading && <p className="text-xs text-primary-DEFAULT mt-1 animate-pulse">Uploading...</p>}
+                  {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
+              </div>
+              
+              {invoice.attachments && invoice.attachments.length > 0 && (
+                <div>
+                  <h5 className="text-sm font-medium text-neutral-dark mt-4">Attached Files:</h5>
+                  <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                    {invoice.attachments.map((file) => (
+                      <li key={file.filePath} className="flex items-center justify-between">
+                         <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-primary-DEFAULT hover:underline truncate" title={file.name}>
+                           {file.name}
+                         </a>
+                         <Button variant="ghost" size="sm" className="!p-1 !text-red-500 hover:!bg-red-100" onClick={() => onFileDelete(file)}>
+                            <TrashIcon className="w-4 h-4"/>
+                         </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+          </div>
       </SectionCard>
       
       <SectionCard title="Summary" initialOpen={false} isCollapsible={true}>

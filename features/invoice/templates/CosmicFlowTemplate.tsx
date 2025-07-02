@@ -1,5 +1,8 @@
 
 
+
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +16,7 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   // Define glow styles for reusability and clarity
   const purpleGlow = { textShadow: '0 0 8px #c084fc' }; // purple-400
@@ -34,7 +38,7 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
           <p className="text-xs text-slate-300 print:text-slate-600">{invoice.sender.address}</p>
         </div>
         <div className="text-left sm:text-right mt-4 sm:mt-0">
-          <h1 className="text-5xl font-extrabold uppercase text-white print:text-black print:text-shadow-none" style={cyanGlow}>Invoice</h1>
+          <h1 className="text-5xl font-extrabold uppercase text-white print:text-black print:text-shadow-none" style={cyanGlow}>{isQuote ? 'Quote' : 'Invoice'}</h1>
           <p className="text-md text-slate-200 print:text-slate-700">Transmission ID: {invoice.id}</p>
         </div>
       </header>
@@ -48,7 +52,7 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
         </div>
         <div className="bg-slate-800/60 p-4 rounded-lg shadow-lg border border-cyan-500/30 text-left md:text-right print:bg-slate-100 print:border-slate-300">
           <p className="mb-1"><strong className="text-slate-400 font-medium print:text-slate-500">Signal Origination:</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.date).toLocaleDateString()}</span></p>
-          <p><strong className="text-slate-400 font-medium print:text-slate-500">Response Deadline:</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
+          <p><strong className="text-slate-400 font-medium print:text-slate-500">{isQuote ? 'Signal Expires:' : 'Response Deadline:'}</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
         </div>
       </section>
 
@@ -79,7 +83,7 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
         <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="bg-slate-800/60 border border-purple-500/30 p-4 rounded-lg shadow-lg space-y-3 text-center md:text-left print:bg-slate-100 print:border-slate-300">
               <h4 className="font-semibold text-purple-300 mb-2 text-md print:text-purple-600">Payment Matrix</h4>
               {qrCodeDataUrl && (
@@ -133,11 +137,26 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
             </div>
           )}
           <div className="flex justify-between p-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white rounded-md mt-2 shadow-2xl print:from-cyan-500 print:to-purple-600">
-            <span className="font-bold text-xl uppercase [text-shadow:0_0_6px_rgba(0,0,0,0.5)] print:text-shadow-none">Total Due:</span>
+            <span className="font-bold text-xl uppercase [text-shadow:0_0_6px_rgba(0,0,0,0.5)] print:text-shadow-none">{isQuote ? 'Total:' : 'Total Due:'}</span>
             <span className="font-bold text-xl [text-shadow:0_0_6px_rgba(0,0,0,0.5)] print:text-shadow-none">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>
       </section>
+
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <section className="mt-10 pt-6 border-t border-purple-500/30 text-xs text-slate-300 print:border-slate-300 print:text-slate-600">
+            <h4 className="font-semibold text-purple-300 mb-1 print:text-purple-600">Data Logs Attached:</h4>
+            <ul className="list-disc list-inside space-y-1">
+                {invoice.attachments.map(att => (
+                    <li key={att.name}>
+                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:text-cyan-100 hover:underline print:text-cyan-700">
+                        {att.name}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </section>
+      )}
 
       {(invoice.notes || invoice.terms) && (
       <section className="mt-10 pt-6 border-t border-purple-500/30 text-xs text-slate-300 print:border-slate-300 print:text-slate-600">

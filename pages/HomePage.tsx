@@ -13,14 +13,14 @@ import { CreditCardIcon } from '../components/icons/CreditCardIcon.tsx';
 // Using a generic document/template icon for "Beautiful Templates"
 const TemplateIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75m0 0l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a2.25 2.25 0 00-2.25-2.25H13.5m0-3h-3.375A2.25 2.25 0 007.875 9v1.5M12 15c-1.243 0-2.25-.97-2.25-2.175V5.25c0-1.205 1.007-2.175 2.25-2.175S14.25 4.045 14.25 5.25v7.575c0 1.205-1.007 2.175-2.25 2.175z" />
   </svg>
 );
 
 
 const FeatureCard: React.FC<{ title: string; description: string; icon: React.ReactNode }> = ({ title, description, icon }) => (
-  <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-start border border-transparent hover:border-primary-light/30">
-    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-primary-light to-secondary-DEFAULT text-white rounded-lg shadow-md mb-5">
+  <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-start border border-transparent hover:border-primary/30">
+    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-primary to-neutral-dark text-white rounded-lg shadow-md mb-5">
       {icon}
     </div>
     <h3 className="text-xl font-semibold text-neutral-darkest mb-2">{title}</h3>
@@ -37,7 +37,7 @@ const FaqItem: React.FC<{ question: string; children: React.ReactNode }> = ({ qu
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <span className="font-semibold text-neutral-darkest">{question}</span>
-                {isOpen ? <ChevronUpIcon className="w-5 h-5 text-primary-DEFAULT" /> : <ChevronDownIcon className="w-5 h-5 text-neutral-DEFAULT" />}
+                {isOpen ? <ChevronUpIcon className="w-5 h-5 text-primary" /> : <ChevronDownIcon className="w-5 h-5 text-neutral-DEFAULT" />}
             </button>
             {isOpen && <div className="pb-5 text-neutral-DEFAULT text-sm leading-relaxed">{children}</div>}
         </div>
@@ -53,7 +53,7 @@ const HomePage: React.FC = () => {
         <AbstractHeroPattern className="absolute inset-0 w-full h-full object-cover opacity-10 text-slate-700" />
         <div className="relative container mx-auto px-4 z-10">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight">
-            Craft Stunning Invoices, <span className="text-primary-light block sm:inline">Effortlessly.</span>
+            Craft Stunning Invoices, <span className="text-purple-300 block sm:inline">Effortlessly.</span>
           </h1>
           <p className="text-lg sm:text-xl text-slate-300/80 mb-10 max-w-2xl mx-auto">
             Invoice Maker blends beautiful design with powerful features to help you create professional invoices in record time.
@@ -61,7 +61,7 @@ const HomePage: React.FC = () => {
           <Link to="/create">
             <Button 
               size="lg" 
-              className="bg-primary-DEFAULT hover:bg-primary-dark text-white shadow-lg hover:shadow-xl transform hover:scale-105 !px-8 !py-3.5"
+              className="bg-primary hover:bg-primary-dark text-white shadow-lg hover:shadow-xl transform hover:scale-105 !px-8 !py-3.5"
               rightIcon={<ArrowRightIcon className="w-5 h-5 ml-2" />}
             >
               Start Creating Now
@@ -102,20 +102,20 @@ const HomePage: React.FC = () => {
         <div className="relative mt-12 grid md:grid-cols-3 gap-8 text-left">
            {/* Dashed line connector for desktop */}
            <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-transparent">
-               <svg width="100%" height="100%"><line x1="0" y1="50%" x2="100%" y2="50%" strokeWidth="2" strokeDasharray="8, 8" className="stroke-primary-light/50 -translate-y-10" /></svg>
+               <svg width="100%" height="100%"><line x1="0" y1="50%" x2="100%" y2="50%" strokeWidth="2" strokeDasharray="8, 8" className="stroke-primary/50 -translate-y-10" /></svg>
            </div>
            <div className="relative bg-white p-6 rounded-lg shadow-lg z-10">
-               <div className="flex items-center text-primary-DEFAULT font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-DEFAULT text-white mr-3">1</span> CHOOSE</div>
+               <div className="flex items-center text-primary font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white mr-3">1</span> CHOOSE</div>
                <h3 className="text-lg font-semibold mb-2">Select a Template</h3>
                <p className="text-sm text-neutral-DEFAULT">Pick a design that reflects your brand's personality from our diverse collection.</p>
            </div>
            <div className="relative bg-white p-6 rounded-lg shadow-lg z-10">
-               <div className="flex items-center text-primary-DEFAULT font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-DEFAULT text-white mr-3">2</span> CUSTOMIZE</div>
+               <div className="flex items-center text-primary font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white mr-3">2</span> CUSTOMIZE</div>
                <h3 className="text-lg font-semibold mb-2">Add Your Details</h3>
                <p className="text-sm text-neutral-DEFAULT">Fill in your items, client info, and payment details. Add your own branding.</p>
            </div>
            <div className="relative bg-white p-6 rounded-lg shadow-lg z-10">
-               <div className="flex items-center text-primary-DEFAULT font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-DEFAULT text-white mr-3">3</span> SEND</div>
+               <div className="flex items-center text-primary font-bold mb-3"><span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white mr-3">3</span> SEND</div>
                <h3 className="text-lg font-semibold mb-2">Share or Download</h3>
                <p className="text-sm text-neutral-DEFAULT">Send a link to your client or download a professional PDF in seconds.</p>
            </div>
@@ -131,7 +131,7 @@ const HomePage: React.FC = () => {
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {AVAILABLE_TEMPLATES.slice(0, 3).map(template => (
-            <div key={template.id} className="bg-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 group flex flex-col overflow-hidden border border-neutral-light/50 hover:border-primary-light/50 transform hover:-translate-y-1">
+            <div key={template.id} className="bg-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 group flex flex-col overflow-hidden border border-neutral-light/50 hover:border-primary/50 transform hover:-translate-y-1">
               <div className="overflow-hidden">
                 <img src={template.thumbnailUrl} alt={template.name} className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500 ease-in-out"/>
               </div>
@@ -139,7 +139,7 @@ const HomePage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-neutral-darkest mb-2">{template.name}</h3>
                 <p className="text-neutral-DEFAULT text-sm mb-4 flex-grow leading-relaxed">{template.description}</p>
                 <Link to="/create" state={{ initialTemplateId: template.id }} className="mt-auto block">
-                  <Button variant="ghost" size="md" className="w-full text-primary-DEFAULT hover:bg-primary-light/10 border-2 border-primary-light/50 hover:border-primary-light">
+                  <Button variant="ghost" size="md" className="w-full text-primary hover:bg-secondary border-2 border-neutral-light hover:border-primary">
                     Use this Template
                   </Button>
                 </Link>
@@ -166,17 +166,17 @@ const HomePage: React.FC = () => {
                      <div className="bg-white p-6 rounded-lg shadow-lg">
                          <p className="text-neutral-DEFAULT mb-4">"This is a game-changer! The templates are beautiful and my invoices have never looked better."</p>
                          <p className="font-semibold text-neutral-darkest">Alex R.</p>
-                         <p className="text-sm text-primary-DEFAULT">Freelance Designer</p>
+                         <p className="text-sm text-primary">Freelance Designer</p>
                      </div>
                       <div className="bg-white p-6 rounded-lg shadow-lg">
                          <p className="text-neutral-DEFAULT mb-4">"The templates are absolutely beautiful and so easy to customize. I finally feel proud sending invoices to my clients."</p>
                          <p className="font-semibold text-neutral-darkest">Jenna M.</p>
-                         <p className="text-sm text-primary-DEFAULT">Marketing Consultant</p>
+                         <p className="text-sm text-primary">Marketing Consultant</p>
                      </div>
                       <div className="bg-white p-6 rounded-lg shadow-lg">
                          <p className="text-neutral-DEFAULT mb-4">"Quick, intuitive, and the results are incredibly professional. The UPI payment option is a fantastic touch for my Indian clients."</p>
                          <p className="font-semibold text-neutral-darkest">Sam K.</p>
-                         <p className="text-sm text-primary-DEFAULT">Web Developer</p>
+                         <p className="text-sm text-primary">Web Developer</p>
                      </div>
                  </div>
             </div>

@@ -1,5 +1,8 @@
 
 
+
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +16,7 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     // Intended background: Repeating geometric pattern or abstract shapes overlay.
@@ -30,7 +34,7 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
           <p className="text-sm text-slate-300 print:text-slate-600">{invoice.sender.address}</p>
         </div>
         <div className="text-right">
-          <h1 className="text-5xl font-extrabold uppercase text-cyan-400 print:text-cyan-600">Invoice</h1>
+          <h1 className="text-5xl font-extrabold uppercase text-cyan-400 print:text-cyan-600">{isQuote ? 'Quote' : 'Invoice'}</h1>
           <p className="text-md text-slate-200 print:text-slate-700"># {invoice.id}</p>
         </div>
       </header>
@@ -44,7 +48,7 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
         </div>
         <div className="border border-slate-700 p-4 rounded text-left md:text-right print:border-slate-300">
           <p className="mb-1"><strong className="text-slate-400 font-medium print:text-slate-500">Issued:</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.date).toLocaleDateString()}</span></p>
-          <p><strong className="text-slate-400 font-medium print:text-slate-500">Due:</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
+          <p><strong className="text-slate-400 font-medium print:text-slate-500">{isQuote ? 'Valid Until:' : 'Due:'}</strong> <span className="text-slate-50 print:text-slate-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
         </div>
       </section>
 
@@ -75,7 +79,7 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
         <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="border border-slate-700 p-4 rounded space-y-3 text-center md:text-left print:border-slate-300">
               <h4 className="font-semibold text-cyan-400 mb-2 text-md print:text-cyan-600">Payment Gateway</h4>
               {qrCodeDataUrl && (
@@ -129,11 +133,26 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
             </div>
           )}
           <div className="flex justify-between p-3 bg-cyan-500 text-slate-900 rounded mt-2 shadow-lg print:bg-cyan-500 print:text-black">
-            <span className="font-bold text-xl uppercase">Total</span>
+            <span className="font-bold text-xl uppercase">{isQuote ? 'Total:' : 'Total Due:'}</span>
             <span className="font-bold text-xl">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>
       </section>
+
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <section className="mt-10 pt-6 border-t border-slate-700 print:border-slate-300">
+            <h4 className="font-semibold text-cyan-400 mb-2 text-md print:text-cyan-600">Attached Files</h4>
+            <ul className="list-disc list-inside text-sm text-slate-300 print:text-slate-700 space-y-1">
+                {invoice.attachments.map(att => (
+                    <li key={att.name}>
+                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:text-cyan-200 hover:underline print:text-cyan-700">
+                        {att.name}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </section>
+      )}
 
       {(invoice.notes || invoice.terms) && (
       <section className="mt-10 pt-6 border-t border-slate-700 text-xs text-slate-300 print:border-slate-300 print:text-slate-600">

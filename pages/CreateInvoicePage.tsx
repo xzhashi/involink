@@ -1,24 +1,26 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
 import InvoiceForm from '../features/invoice/InvoiceForm.tsx';
 import InvoicePreview from '../features/invoice/InvoicePreview.tsx';
 import TemplateSwitcher from '../features/invoice/TemplateSwitcher.tsx';
-import { InvoiceData, InvoiceItem, CompanyDetails, PlanData } from '../types.ts';
-import { INITIAL_INVOICE_STATE, AVAILABLE_TEMPLATES, DEFAULT_CURRENCY } from '../constants.ts';
+import { InvoiceData, InvoiceItem, CompanyDetails, PlanData, CustomizationState, Attachment } from '../types.ts';
+import { INITIAL_INVOICE_STATE, AVAILABLE_TEMPLATES, DEFAULT_CURRENCY, INITIAL_CUSTOMIZATION_STATE } from '../constants.ts';
 import Button from '../components/common/Button.tsx';
 import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
-import { ShareIcon } from '../components/icons/ShareIcon.tsx';
 import { WhatsAppIcon } from '../components/icons/WhatsAppIcon.tsx';
 import { calculateInvoiceTotal } from '../utils.ts';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx'; 
 import { useLocalization } from '../contexts/LocalizationContext.tsx';
-import { saveInvoiceToSupabase, fetchLatestInvoiceFromSupabase, fetchInvoiceByIdFromSupabase } from '../services/supabaseClient.ts';
-import { XMarkIcon } from '../components/icons/XMarkIcon.tsx'; // For modal close
+import { saveInvoiceToSupabase, fetchInvoiceByIdFromSupabase, uploadAttachment, deleteAttachment } from '../services/supabaseClient.ts';
+import { XMarkIcon } from '../components/icons/XMarkIcon.tsx';
 import { PlusIcon } from '../components/icons/PlusIcon.tsx';
-import MobileActionsBar from '../components/MobileActionsBar.tsx'; // New: Mobile Actions
-import { PaletteIcon } from '../components/icons/PaletteIcon.tsx'; // New: Palette Icon
+import MobileActionsBar from '../components/MobileActionsBar.tsx';
+import CustomizationPanel from '../features/invoice/CustomizationPanel.tsx';
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
+import { CopyIcon } from '../components/icons/CopyIcon.tsx';
+import { EnvelopeIcon } from '../components/icons/EnvelopeIcon.tsx';
 
 const CreateInvoicePageSkeleton: React.FC = () => {
     return (
@@ -75,7 +77,7 @@ const CreateInvoicePageSkeleton: React.FC = () => {
 const LimitReachedModal: React.FC<{ plan: PlanData | null, onClose: () => void }> = ({ plan, onClose }) => (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[80] no-print backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="limit-modal-title">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md text-center p-8">
-            <SparklesIcon className="w-12 h-12 mx-auto text-primary-DEFAULT mb-4" />
+            <SparklesIcon className="w-12 h-12 mx-auto text-primary mb-4" />
             <h3 id="limit-modal-title" className="text-2xl font-bold text-neutral-darkest mb-3">Free Plan Limit Reached</h3>
             <p className="text-neutral-DEFAULT mb-6">
                 You've created the maximum of {plan?.invoice_limit || 3} invoices for this month. Please upgrade to create unlimited invoices and unlock all premium features.
@@ -102,7 +104,6 @@ const CreateInvoicePage: React.FC = () => {
 
   const getNewInvoiceState = useCallback(() => {
     const baseState = {...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`};
-    // Only override currency if it's loaded and different from the default
     if (userCurrency && !currencyLoading) {
         baseState.currency = userCurrency;
     }
@@ -111,18 +112,22 @@ const CreateInvoicePage: React.FC = () => {
 
   const [invoice, setInvoice] = useState<InvoiceData>(getNewInvoiceState());
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local_saved'>('idle');
-  const [shareStatus, setShareStatus] = useState<'idle' | 'sharing' | 'copied' | 'shared' | 'error' | 'not_supported' | 'save_first'>('idle');
+  const [actionStatus, setActionStatus] = useState<'idle' | 'processing' | 'copied' | 'error'>('idle');
+  const [actionErrorMsg, setActionErrorMsg] = useState('');
+
   const [pageLoading, setPageLoading] = useState(true);
   const [isNewInvoice, setIsNewInvoice] = useState(true);
   const [generatedUpiLink, setGeneratedUpiLink] = useState<string | undefined>(undefined);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | undefined>(undefined);
-  const [showShareModal, setShowShareModal] = useState(false);
   const [showWhatsAppOptionsModal, setShowWhatsAppOptionsModal] = useState(false);
   const [temporaryLogoUrl, setTemporaryLogoUrl] = useState<string | null>(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showCustomizationPanel, setShowCustomizationPanel] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Effect to manage body class for printing
   useEffect(() => {
     const beforePrintHandler = () => document.body.classList.add('printing');
     const afterPrintHandler = () => document.body.classList.remove('printing');
@@ -133,7 +138,6 @@ const CreateInvoicePage: React.FC = () => {
     return () => {
         window.removeEventListener('beforeprint', beforePrintHandler);
         window.removeEventListener('afterprint', afterPrintHandler);
-        // Ensure class is removed if component unmounts during print preview
         document.body.classList.remove('printing'); 
     };
   }, []);
@@ -194,6 +198,8 @@ const CreateInvoicePage: React.FC = () => {
     fullBaseInvoice.has_branding = typeof fullBaseInvoice.has_branding === 'boolean' ? fullBaseInvoice.has_branding : true;
     fullBaseInvoice.is_public = typeof fullBaseInvoice.is_public === 'boolean' ? fullBaseInvoice.is_public : false;
     fullBaseInvoice.upiId = typeof fullBaseInvoice.upiId === 'string' ? fullBaseInvoice.upiId : '';
+    fullBaseInvoice.customization = { ...INITIAL_CUSTOMIZATION_STATE, ...(fullBaseInvoice.customization || {}) };
+    fullBaseInvoice.attachments = Array.isArray(fullBaseInvoice.attachments) ? fullBaseInvoice.attachments : [];
 
 
     return fullBaseInvoice;
@@ -202,7 +208,6 @@ const CreateInvoicePage: React.FC = () => {
   useEffect(() => {
     if (authLoading) return; 
 
-    // Plan limit check
     if (isLimitReached && !invoiceDbId && !pageLoading) {
       setShowLimitModal(true);
     }
@@ -217,15 +222,13 @@ const CreateInvoicePage: React.FC = () => {
 
         if (user) { 
           if (invoiceDbId) { 
-            loadedInvoiceData = await fetchInvoiceByIdFromSupabase(invoiceDbId, user.id);
+            loadedInvoiceData = await fetchInvoiceByIdFromSupabase(invoiceDbId);
             if (!loadedInvoiceData && isMounted) {
                 navigate('/create', { replace: true });
                 setPageLoading(false);
                 return;
             }
             if (loadedInvoiceData) newInvoiceFlag = false;
-          } else { 
-            // Don't fetch latest for /create, always start new unless specific ID is given
           }
         } else { 
           const savedInvoiceRaw = localStorage.getItem('currentInvoice');
@@ -255,10 +258,10 @@ const CreateInvoicePage: React.FC = () => {
         setInvoice(finalInvoiceState);
         setGeneratedUpiLink(undefined);
         setQrCodeDataUrl(undefined);
-        setTemporaryLogoUrl(null); // Reset temporary logo on load
+        setTemporaryLogoUrl(null);
 
       } catch (error) {
-        // Error handling can be done here if needed (e.g., showing a toast)
+        // Error handling can be done here if needed
       } finally {
         if (isMounted) {
           setPageLoading(false);
@@ -272,78 +275,77 @@ const CreateInvoicePage: React.FC = () => {
         isMounted = false;
     };
   }, [user, authLoading, invoiceDbId, sanitizeInvoiceData, navigate, isLimitReached, getNewInvoiceState]);
+  
+  const handleSave = useCallback(async () => {
+    setSaveStatus('saving');
+    try {
+      const invoiceWithBranding = {
+        ...invoice,
+        has_branding: currentUserPlan?.has_branding ?? true,
+      };
+
+      if (user && invoiceWithBranding.user_id === user.id) {
+        const savedData = await saveInvoiceToSupabase(invoiceWithBranding);
+        if (savedData) {
+          if (savedData.db_id && savedData.db_id !== invoice.db_id) {
+            setInvoice(prev => ({ ...prev, db_id: savedData.db_id, is_public: savedData.is_public }));
+          }
+          if (!invoiceDbId && savedData.db_id) {
+            navigate(`/invoice/${savedData.db_id}`, { replace: true });
+          }
+          setSaveStatus('saved');
+        } else {
+          setSaveStatus('error');
+        }
+      } else {
+        localStorage.setItem('currentInvoice', JSON.stringify(invoiceWithBranding));
+        setSaveStatus('local_saved');
+      }
+    } catch (e) {
+      setSaveStatus('error');
+    } finally {
+      const resetSaveStatusTimer = setTimeout(() => {
+        setSaveStatus(currentStatus => {
+          if (currentStatus === 'saved' || currentStatus === 'local_saved' || currentStatus === 'error') {
+            return 'idle';
+          }
+          return currentStatus;
+        });
+      }, 3000);
+
+      return () => clearTimeout(resetSaveStatusTimer);
+    }
+  }, [invoice, user, currentUserPlan, invoiceDbId, navigate]);
 
   useEffect(() => {
-    if (pageLoading || authLoading) return; 
+    if (pageLoading || authLoading) return;
     if (invoice.id === INITIAL_INVOICE_STATE.id && !invoice.db_id && invoiceDbId) {
-        // Avoid saving initial state if we are loading an existing invoice but it hasn't loaded yet.
         return;
     }
     
-    // Prevent auto-saving for new invoices if user is over their limit
     if (isLimitReached && !invoice.db_id) {
         setSaveStatus('error');
         return;
     }
-
-    const autoSave = async () => {
-      setSaveStatus('saving');
-      try {
-        const invoiceWithBranding = {
-          ...invoice,
-          has_branding: currentUserPlan?.has_branding ?? true,
-        };
-
-        if (user && invoiceWithBranding.user_id === user.id) { 
-          const savedData = await saveInvoiceToSupabase(invoiceWithBranding);
-          if (savedData) {
-            if (savedData.db_id && savedData.db_id !== invoice.db_id) {
-               setInvoice(prev => ({...prev, db_id: savedData.db_id, is_public: savedData.is_public}));
-            }
-            if (!invoiceDbId && savedData.db_id) { 
-                navigate(`/invoice/${savedData.db_id}`, { replace: true });
-            }
-            setSaveStatus('saved');
-          } else {
-            setSaveStatus('error');  
-          }
-        } else if (!user) { 
-          localStorage.setItem('currentInvoice', JSON.stringify(invoiceWithBranding));
-          setSaveStatus('local_saved');
-        } else {
-          localStorage.setItem('currentInvoice', JSON.stringify(invoiceWithBranding));
-          setSaveStatus('local_saved');
-        }
-      } catch (e) {
-        setSaveStatus('error');
-      } finally {
-         const resetSaveStatusTimer = setTimeout(() => {
-            setSaveStatus(currentStatus => {
-                if (currentStatus === 'saved' || currentStatus === 'local_saved' || currentStatus === 'error') {
-                    return 'idle';
-                }
-                return currentStatus; 
-            });
-        }, 3000); 
-
-         return () => clearTimeout(resetSaveStatusTimer);
-      }
-    };
     
     if (JSON.stringify(invoice) !== JSON.stringify(INITIAL_INVOICE_STATE) || invoice.db_id) {
-        const debounceTimer = setTimeout(autoSave, 1500);
+        const debounceTimer = setTimeout(handleSave, 1500);
         return () => clearTimeout(debounceTimer);
     }
 
-  }, [invoice, user, pageLoading, authLoading, navigate, invoiceDbId, isLimitReached, currentUserPlan]); 
+  }, [invoice, pageLoading, authLoading, invoiceDbId, isLimitReached, handleSave]); 
   
+  const handleManualSave = () => {
+    handleSave();
+  };
+
   const handleInvoiceChange = useCallback(<K extends keyof InvoiceData>(key: K, value: InvoiceData[K]) => {
     setInvoice(prev => ({ ...prev, [key]: value }));
   }, []);
 
   const handleTemplateSelect = useCallback((id: string) => {
     handleInvoiceChange('selectedTemplateId', id);
-    setShowTemplateModal(false); // Close modal on selection
+    setShowTemplateModal(false);
   }, [handleInvoiceChange]); 
 
   const handleCompanyDetailsChange = useCallback((party: 'sender' | 'recipient', key: string, value: string) => {
@@ -387,56 +389,96 @@ const CreateInvoicePage: React.FC = () => {
     }
   }, []);
 
+  const handleCustomizationChange = useCallback((newCustomization: Partial<CustomizationState>) => {
+    setInvoice(prev => ({
+      ...prev,
+      customization: {
+        ...(prev.customization || INITIAL_CUSTOMIZATION_STATE),
+        ...newCustomization,
+      },
+    }));
+  }, []);
+
   const handleDownload = () => {
     window.print();
   };
   
   const invoiceTotal = useMemo(() => calculateInvoiceTotal(invoice), [invoice]);
-  
-  const getShareUrl = () => {
-    if (!invoice.db_id) return null;
-    return `${window.location.origin}/#/view/invoice/${invoice.db_id}`;
-  };
 
-  const makeInvoicePublicAndGetUrl = async (): Promise<string | null> => {
-    if (!user || !invoice.user_id) {
-        setShareStatus('save_first');
-        setTimeout(() => setShareStatus('idle'), 3000);
-        return null;
+  const resetActionStatus = useCallback(() => {
+    setTimeout(() => {
+      setActionStatus('idle');
+      setActionErrorMsg('');
+    }, 3000);
+  }, []);
+
+  const prepareShareableLink = async (): Promise<string | null> => {
+    setActionStatus('processing');
+    setActionErrorMsg('');
+
+    if (!user) {
+      setActionStatus('error');
+      setActionErrorMsg('Please log in to share or send invoices.');
+      resetActionStatus();
+      return null;
+    }
+
+    if (!invoice.db_id) {
+      setActionStatus('error');
+      setActionErrorMsg('Please wait for the invoice to be saved first.');
+      resetActionStatus();
+      return null;
     }
     
-    setShareStatus('sharing');
-    let publicInvoice = invoice;
-
-    // If invoice isn't public yet, update it
-    if (!invoice.is_public) {
-        try {
-            const updatedInvoiceData = await saveInvoiceToSupabase({ ...invoice, is_public: true });
-            if (!updatedInvoiceData) {
-                throw new Error("Failed to make invoice public.");
-            }
-            publicInvoice = updatedInvoiceData;
-            setInvoice(publicInvoice); // Update local state
-        } catch (error) {
-            setShareStatus('error');
-            setTimeout(() => setShareStatus('idle'), 3000);
-            return null;
-        }
-    }
-
-    if (!publicInvoice.db_id) {
-      setShareStatus('save_first');
-      setTimeout(() => setShareStatus('idle'), 3000);
-      return null;
+    let publicInvoice = { ...invoice };
+    if (!publicInvoice.is_public) {
+      try {
+        const updatedInvoiceData = await saveInvoiceToSupabase({ ...publicInvoice, is_public: true });
+        if (!updatedInvoiceData) throw new Error("Failed to make invoice public.");
+        publicInvoice = updatedInvoiceData;
+        setInvoice(publicInvoice); // Update local state with the now-public invoice
+      } catch (error) {
+        setActionStatus('error');
+        setActionErrorMsg('Could not prepare a public link.');
+        resetActionStatus();
+        return null;
+      }
     }
     
     return `${window.location.origin}/#/view/invoice/${publicInvoice.db_id}`;
   };
 
+  const handleCopyLink = async () => {
+    const url = await prepareShareableLink();
+    if (!url) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setActionStatus('copied');
+    } catch (err) {
+      setActionStatus('error');
+      setActionErrorMsg('Failed to copy link.');
+    } finally {
+      setShowShareModal(false);
+      resetActionStatus();
+    }
+  };
+
+  const handleSendByEmail = async () => {
+    const url = await prepareShareableLink();
+    if (!url) return;
+
+    setActionStatus('idle'); 
+    setShowShareModal(false);
+    
+    const subject = `Invoice ${invoice.id} from ${invoice.sender.name}`;
+    const body = `Hello ${invoice.recipient.name || ''},\n\nPlease find your invoice online at the link below:\n${url}\n\nTotal Amount Due: ${invoice.currency} ${invoiceTotal.toFixed(2)}\nDue Date: ${new Date(invoice.dueDate).toLocaleDateString()}\n\nThank you!\n\nBest regards,\n${invoice.sender.name}`;
+    const mailtoLink = `mailto:${invoice.recipient.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    window.location.href = mailtoLink;
+  };
 
   const getInvoiceSummaryForShare = (shareUrl: string) => {
-    if (!shareUrl) return "Please save the invoice first to get a shareable link.";
-
     let summary = `Invoice #${invoice.id} from ${invoice.sender.name || 'My Business'} for ${invoice.currency || DEFAULT_CURRENCY} ${invoiceTotal.toFixed(2)}.`;
     summary += `\nView at: ${shareUrl}`;
     if (generatedUpiLink) {
@@ -447,46 +489,12 @@ const CreateInvoicePage: React.FC = () => {
     }
     return summary;
   }
-
-  const handleShareInvoiceLink = async () => {
-    const shareUrl = await makeInvoicePublicAndGetUrl();
-    if (!shareUrl) return;
-
-    setShareStatus('idle');
-
-    const shareData = {
-      title: `Invoice #${invoice.id} from ${invoice.sender.name || 'My Business'}`,
-      text: getInvoiceSummaryForShare(shareUrl),
-      url: shareUrl, 
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        setShareStatus('shared');
-      } catch (err) {
-        // Ignore user cancellation
-        if ((err as DOMException).name !== 'AbortError') {
-            setShareStatus('error');
-        }
-      }
-    } else if (navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(shareData.url);
-        setShareStatus('copied');
-      } catch (err) {
-        setShareStatus('error');
-      }
-    } else {
-      setShareStatus('not_supported');
-    }
-    setTimeout(() => setShareStatus('idle'), 3000); 
-  };
   
   const handleShareOnWhatsApp = async () => {
-    const shareUrl = await makeInvoicePublicAndGetUrl();
+    const shareUrl = await prepareShareableLink();
      if (!shareUrl) return;
 
+    setActionStatus('idle');
     const recipientPhone = invoice.recipient.phone;
     if (!recipientPhone || recipientPhone.trim() === '') {
       setShowWhatsAppOptionsModal(true); 
@@ -496,7 +504,7 @@ const CreateInvoicePage: React.FC = () => {
   };
 
   const shareWhatsAppWithMessage = (messageType: 'link' | 'pdf_guide') => {
-    const shareUrl = getShareUrl();
+    const shareUrl = `${window.location.origin}/#/view/invoice/${invoice.db_id}`;
     if (!shareUrl) return;
 
     const recipientPhone = invoice.recipient.phone?.replace(/[^\d+]/g, '') || '';
@@ -533,32 +541,65 @@ const CreateInvoicePage: React.FC = () => {
     setQrCodeDataUrl(qrData);
   }, []);
 
-  const handleModalShareLink = () => {
-    handleShareInvoiceLink();
-    setShowShareModal(false);
-  };
-
-  const handleModalSharePdf = () => {
-    handleDownload(); 
-    setShowShareModal(false);
-  };
-
   const handleTemporaryLogoChange = useCallback((logoDataUrl: string | null) => {
     setTemporaryLogoUrl(logoDataUrl);
   }, []);
+  
+  const handleFileUpload = async (files: FileList) => {
+    if (!user || !invoice.db_id) {
+        setUploadError("Please save the invoice before adding attachments.");
+        return;
+    }
+    setIsUploading(true);
+    setUploadError(null);
+
+    const uploadPromises = Array.from(files).map(file => uploadAttachment(file, user.id, invoice.db_id!));
+    
+    try {
+        const newAttachments = await Promise.all(uploadPromises);
+        setInvoice(prev => ({
+            ...prev,
+            attachments: [...(prev.attachments || []), ...newAttachments],
+        }));
+    } catch (error: any) {
+        setUploadError(error.message || "Failed to upload one or more files.");
+    } finally {
+        setIsUploading(false);
+    }
+  };
+
+  const handleFileDelete = async (attachmentToDelete: Attachment) => {
+      if (!user) return;
+      
+      setInvoice(prev => ({
+          ...prev,
+          attachments: prev.attachments?.filter(att => att.filePath !== attachmentToDelete.filePath),
+      }));
+
+      const { success, error } = await deleteAttachment(attachmentToDelete.filePath);
+      
+      if (!success) {
+          setUploadError(error.message || "Failed to delete file from storage.");
+          setInvoice(prev => ({
+              ...prev,
+              attachments: [...(prev.attachments || []), attachmentToDelete],
+          }));
+      }
+  };
+
 
   if (authLoading || pageLoading) {
     return <CreateInvoicePageSkeleton />;
   }
 
   const isSaveDisabled = isLimitReached && !invoice.db_id;
-  const isSharingDisabled = shareStatus === 'sharing';
+  const isActionProcessing = actionStatus === 'processing';
 
   return (
     <>
       {showLimitModal && <LimitReachedModal plan={currentUserPlan} onClose={() => setShowLimitModal(false)}/>}
 
-      <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 pb-20 lg:pb-0"> {/* Added pb for mobile nav */}
+      <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 pb-20 lg:pb-0">
         <div className="lg:w-2/5 xl:w-1/3 no-print lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto thin-scrollbar p-1">
           <div className="space-y-6">
               {isSaveDisabled && (
@@ -579,9 +620,13 @@ const CreateInvoicePage: React.FC = () => {
                 onUpiDetailsGenerated={handleUpiDetailsGenerated}
                 temporaryLogoUrl={temporaryLogoUrl}
                 onTemporaryLogoChange={handleTemporaryLogoChange}
-                onOpenTemplateModal={() => setShowTemplateModal(true)} // Pass handler to open modal
+                onOpenTemplateModal={() => setShowTemplateModal(true)}
+                onOpenCustomizationModal={() => setShowCustomizationPanel(true)}
+                onFileUpload={handleFileUpload}
+                onFileDelete={handleFileDelete}
+                isUploading={isUploading}
+                uploadError={uploadError}
               />
-              {/* Desktop Actions Panel - Hidden on small screens */}
               <div className="bg-white p-4 rounded-lg shadow-md sticky bottom-0 hidden lg:block">
                   <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-neutral-darkest">Actions</h3>
@@ -594,50 +639,30 @@ const CreateInvoicePage: React.FC = () => {
                           {saveStatus === 'idle' && (invoiceDbId || JSON.stringify(invoice) !== JSON.stringify(INITIAL_INVOICE_STATE)) && <span className="text-neutral-DEFAULT italic">Auto-saves</span>}
                       </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-                      <Button 
-                        onClick={handleDownload} 
-                        variant="secondary" 
-                        size="md" 
-                        className="w-full" 
-                        leftIcon={<DownloadIcon className="w-5 h-5"/>}
-                        title="Open browser print dialog to print or save as PDF"
-                      >
-                        Download / Print PDF
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                      <Button onClick={handleDownload} variant="secondary" leftIcon={<DownloadIcon className="w-5 h-5"/>} title="Open browser print dialog to print or save as PDF">
+                        Print / PDF
                       </Button>
-                      <Button 
-                        onClick={() => setShowShareModal(true)} 
-                        variant="primary" 
-                        size="md" 
-                        className="w-full" 
-                        leftIcon={<ShareIcon className="w-5 h-5"/>}
-                        title="Share invoice"
-                        disabled={isSharingDisabled}
-                      >
-                         {isSharingDisabled ? 'Preparing...' : 'Share Invoice'}
+                      <Button onClick={handleCopyLink} variant="secondary" leftIcon={<CopyIcon className="w-5 h-5"/>} disabled={isActionProcessing} title="Copy public link to clipboard">
+                        {isActionProcessing ? '...' : actionStatus === 'copied' ? 'Copied!' : 'Copy Link'}
                       </Button>
                   </div>
-                   <Button 
-                      onClick={handleShareOnWhatsApp}
-                      variant="primary" 
-                      size="md"
-                      className="w-full !bg-gradient-to-r !from-green-500 !to-emerald-600 hover:!from-green-600 hover:!to-emerald-700 !focus:ring-green-500 mb-2"
-                      leftIcon={<WhatsAppIcon className="w-5 h-5" />}
-                      title="Share invoice via WhatsApp"
-                      disabled={isSharingDisabled}
-                    >
-                      {isSharingDisabled ? 'Preparing...' : 'Share on WhatsApp'}
-                    </Button>
-                   { shareStatus === 'not_supported' && <p className="text-xs text-neutral-DEFAULT mt-1 text-center">Native sharing not supported. Try copying link.</p>}
-                   { shareStatus === 'error' && <p className="text-xs text-red-500 mt-1 text-center">Could not share or copy. Please try again.</p>}
-                   { shareStatus === 'copied' && <p className="text-xs text-green-600 mt-1 text-center">Invoice link copied to clipboard!</p>}
-                   { shareStatus === 'shared' && <p className="text-xs text-green-600 mt-1 text-center">Invoice shared successfully!</p>}
-                   { shareStatus === 'save_first' && <p className="text-xs text-amber-600 mt-1 text-center">Login required to get a shareable link.</p>}
+                   <div className="grid grid-cols-1 gap-2">
+                        <Button onClick={handleSendByEmail} variant="primary" disabled={isActionProcessing} leftIcon={<EnvelopeIcon className="w-5 h-5"/>} title="Send invoice link via email">
+                            {isActionProcessing ? 'Preparing...' : 'Send by Email'}
+                        </Button>
+                        <Button onClick={handleShareOnWhatsApp} variant="primary" className="!bg-gradient-to-r !from-green-500 !to-emerald-600 hover:!from-green-600 hover:!to-emerald-700 !focus:ring-green-500" leftIcon={<WhatsAppIcon className="w-5 h-5" />} disabled={isActionProcessing} title="Share invoice via WhatsApp">
+                            {isActionProcessing ? 'Preparing...' : 'Share on WhatsApp'}
+                        </Button>
+                   </div>
+                   
+                   {actionStatus === 'error' && <p className="text-xs text-red-500 mt-2 text-center">{actionErrorMsg}</p>}
+
                    <Button 
                       onClick={handleCreateNew} 
                       variant="ghost" 
                       size="md" 
-                      className="w-full mt-2 border-primary-light text-primary-dark hover:bg-primary-lightest"
+                      className="w-full mt-3 border border-primary text-primary-dark hover:bg-secondary"
                       title={isLimitReached ? "Plan limit reached" : "Create a new blank invoice"}
                       disabled={isLimitReached}
                     >
@@ -653,21 +678,55 @@ const CreateInvoicePage: React.FC = () => {
                   upiLink={generatedUpiLink}
                   qrCodeDataUrl={qrCodeDataUrl}
                   temporaryLogoUrl={temporaryLogoUrl}
-                  userPlan={currentUserPlan} // Pass full plan object
+                  userPlan={currentUserPlan}
+                  customization={invoice.customization}
                />
           </div>
         </div>
       </div>
 
-      {/* Mobile Actions Bar */}
       <MobileActionsBar
         onDownload={handleDownload}
+        onSave={handleManualSave}
         onShare={() => setShowShareModal(true)}
         onWhatsApp={handleShareOnWhatsApp}
         onCreateNew={handleCreateNew}
+        actionStatus={actionStatus}
+        saveStatus={saveStatus}
       />
 
-      {/* Template Chooser Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end no-print" onClick={() => setShowShareModal(false)}>
+            <div className="bg-white w-full rounded-t-2xl p-4 animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-1 bg-neutral-light rounded-full mx-auto mb-3"></div>
+                <h3 className="text-lg font-semibold text-center mb-4 text-neutral-darkest">Share Invoice</h3>
+                <div className="space-y-3">
+                    <Button 
+                        onClick={handleCopyLink} 
+                        variant="secondary" 
+                        className="w-full !justify-start !py-3" 
+                        leftIcon={<CopyIcon className="w-5 h-5 text-neutral-600" />}
+                        disabled={isActionProcessing}
+                    >
+                      {actionStatus === 'copied' ? 'Link Copied!' : 'Copy Public Link'}
+                    </Button>
+                    <Button 
+                        onClick={handleSendByEmail} 
+                        variant="secondary" 
+                        className="w-full !justify-start !py-3" 
+                        leftIcon={<EnvelopeIcon className="w-5 h-5 text-neutral-600" />}
+                        disabled={isActionProcessing}
+                    >
+                        Send via Email
+                    </Button>
+                </div>
+                <Button variant="ghost" className="w-full mt-4 !py-3" onClick={() => setShowShareModal(false)} disabled={isActionProcessing}>
+                    Cancel
+                </Button>
+            </div>
+        </div>
+      )}
+
       {showTemplateModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 no-print backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="template-modal-title">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
@@ -686,7 +745,7 @@ const CreateInvoicePage: React.FC = () => {
                 templates={AVAILABLE_TEMPLATES}
                 selectedTemplateId={invoice.selectedTemplateId}
                 onSelectTemplate={handleTemplateSelect}
-                isInitialChoice={true} // Style as initial choice for better modal presentation
+                isInitialChoice={true}
               />
             </div>
              <div className="p-4 border-t text-right">
@@ -696,62 +755,12 @@ const CreateInvoicePage: React.FC = () => {
         </div>
       )}
 
-
-      {showShareModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] no-print backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 id="share-modal-title" className="text-xl font-semibold text-neutral-darkest">Share Invoice</h3>
-              <button 
-                onClick={() => setShowShareModal(false)} 
-                className="text-neutral-500 hover:text-neutral-700 p-1 rounded-full hover:bg-neutral-light"
-                aria-label="Close share modal"
-              >
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <Button onClick={handleModalShareLink} variant="primary" className="w-full" disabled={isSharingDisabled}>
-                {isSharingDisabled ? 'Preparing...' : 'Share Link'}
-              </Button>
-              <Button onClick={handleModalSharePdf} variant="secondary" className="w-full">
-                Share as PDF (Print & Save)
-              </Button>
-            </div>
-            <p className="text-xs text-neutral-DEFAULT mt-4 text-center">
-              For PDF sharing, use your browser's print options to 'Save as PDF', then share the saved file.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {showWhatsAppOptionsModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] no-print backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="whatsapp-options-title">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-xs">
-            <div className="flex justify-between items-center mb-4">
-              <h3 id="whatsapp-options-title" className="text-lg font-semibold text-neutral-darkest">Share via WhatsApp</h3>
-              <button
-                onClick={() => setShowWhatsAppOptionsModal(false)}
-                className="text-neutral-500 hover:text-neutral-700 p-1 rounded-full hover:bg-neutral-light"
-                aria-label="Close WhatsApp options modal"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-neutral-DEFAULT mb-4">How would you like to share this invoice?</p>
-            <div className="space-y-3">
-              <Button onClick={() => shareWhatsAppWithMessage('link')} variant="primary" className="w-full">
-                Share Link
-              </Button>
-              <Button onClick={() => shareWhatsAppWithMessage('pdf_guide')} variant="secondary" className="w-full">
-                Share PDF (Guide)
-              </Button>
-            </div>
-            <p className="text-xs text-neutral-DEFAULT mt-3 text-center">
-              PDF guide will provide instructions to download and attach the PDF.
-            </p>
-          </div>
-        </div>
+      {showCustomizationPanel && invoice.selectedTemplateId === 'custom' && (
+          <CustomizationPanel
+              customization={invoice.customization || INITIAL_CUSTOMIZATION_STATE}
+              onCustomizationChange={handleCustomizationChange}
+              onClose={() => setShowCustomizationPanel(false)}
+          />
       )}
     </>
   );

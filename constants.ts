@@ -1,4 +1,5 @@
-import { InvoiceData, InvoiceTemplateInfo, InvoiceTemplateProps, PlanData } from './types.ts'; // Ensure InvoiceData and InvoiceTemplateProps are imported
+
+import { InvoiceData, InvoiceTemplateInfo, InvoiceTemplateProps, PlanData, CustomizationState } from './types.ts';
 import MinimalistTemplate from './features/invoice/templates/MinimalistTemplate.tsx';
 import ModernTemplate from './features/invoice/templates/ModernTemplate.tsx';
 import CreativeTemplate from './features/invoice/templates/CreativeTemplate.tsx';
@@ -17,6 +18,11 @@ import IndustrialGritTemplate from './features/invoice/templates/IndustrialGritT
 import BohemianDreamTemplate from './features/invoice/templates/BohemianDreamTemplate.tsx';
 import RetroPixelTemplate from './features/invoice/templates/RetroPixelTemplate.tsx';
 import LuxuryGoldTemplate from './features/invoice/templates/LuxuryGoldTemplate.tsx';
+import CustomTemplate from './features/invoice/templates/CustomTemplate.tsx';
+import SwissModernTemplate from './features/invoice/templates/SwissModernTemplate.tsx';
+import HandDrawnSketchTemplate from './features/invoice/templates/HandDrawnSketchTemplate.tsx';
+import FloralBotanicalTemplate from './features/invoice/templates/FloralBotanicalTemplate.tsx';
+import CyberpunkGlitchTemplate from './features/invoice/templates/CyberpunkGlitchTemplate.tsx';
 
 // ADMIN_EMAIL is no longer used for client-side admin role simulation. Role is checked via user_metadata.
 // export const ADMIN_EMAIL = 'admin@invoicemaker.linkfc.com'; 
@@ -29,6 +35,7 @@ export const PLANS_DATA: PlanData[] = [
     name: 'Free', 
     price: '0', 
     price_suffix: '',
+    billing_cycle: 'monthly',
     features: ['Up to 3 invoices per month', 'Basic templates', 'Email support', '"Powered by" branding'],
     cta_text: 'Current Plan',
     is_current: true, 
@@ -38,10 +45,25 @@ export const PLANS_DATA: PlanData[] = [
     invoice_limit: 3,
   },
   { 
-    id: 'pro_tier',
+    id: 'pro_monthly',
     name: 'Pro', 
     price: '15', 
     price_suffix: '/mo',
+    billing_cycle: 'monthly',
+    features: ['Unlimited invoices', 'All templates', 'Priority email support', 'Remove branding'],
+    cta_text: 'Choose Pro',
+    is_current: false,
+    variant: 'primary',
+    has_branding: false,
+    sort_order: 2,
+    invoice_limit: null,
+  },
+    { 
+    id: 'pro_annually',
+    name: 'Pro', 
+    price: '144', 
+    price_suffix: '/yr',
+    billing_cycle: 'annually',
     features: ['Unlimited invoices', 'All templates', 'Priority email support', 'Remove branding'],
     cta_text: 'Choose Pro',
     is_current: false,
@@ -51,10 +73,11 @@ export const PLANS_DATA: PlanData[] = [
     invoice_limit: null,
   },
   { 
-    id: 'enterprise_tier',
+    id: 'enterprise_monthly',
     name: 'Enterprise', 
     price: '49', 
     price_suffix: '/mo',
+    billing_cycle: 'monthly',
     features: ['All Pro features', 'Team collaboration (soon)', 'Custom integrations (soon)', 'Dedicated support'],
     cta_text: 'Contact Us',
     is_current: false,
@@ -63,6 +86,46 @@ export const PLANS_DATA: PlanData[] = [
     sort_order: 3,
     invoice_limit: null,
   },
+    { 
+    id: 'enterprise_annually',
+    name: 'Enterprise', 
+    price: '470', 
+    price_suffix: '/yr',
+    billing_cycle: 'annually',
+    features: ['All Pro features', 'Team collaboration (soon)', 'Custom integrations (soon)', 'Dedicated support'],
+    cta_text: 'Contact Us',
+    is_current: false,
+    variant: 'secondary',
+    has_branding: false,
+    sort_order: 3,
+    invoice_limit: null,
+  },
+];
+
+export const INITIAL_CUSTOMIZATION_STATE: CustomizationState = {
+  primaryColor: '#3B82F6',   // blue-500
+  accentColor: '#10B981',    // emerald-500
+  textColor: '#1E293B',      // slate-800
+  backgroundColor: '#F8FAFC', // slate-50
+  headingFont: 'Playfair Display',
+  bodyFont: 'Lato',
+  logoSize: 80,
+  showLogo: true,
+  showNotes: true,
+  showTerms: true,
+};
+
+export const AVAILABLE_FONTS = [
+  { family: 'Inter', label: 'Inter (Sans-Serif)' },
+  { family: 'Playfair Display', label: 'Playfair Display (Serif)' },
+  { family: 'Lato', label: 'Lato (Sans-Serif)' },
+  { family: 'Lora', label: 'Lora (Serif)' },
+  { family: 'Roboto Condensed', label: 'Roboto Condensed (Sans-Serif)' },
+  { family: 'Quicksand', label: 'Quicksand (Sans-Serif)' },
+  { family: 'Gochi Hand', label: 'Gochi Hand (Handwritten)' },
+  { family: 'VT323', label: 'VT323 (Pixel)' },
+  { family: 'Press Start 2P', label: 'Press Start 2P (Pixel)' },
+  { family: 'Satisfy', label: 'Satisfy (Cursive)' },
 ];
 
 
@@ -82,6 +145,9 @@ export const INITIAL_INVOICE_STATE: InvoiceData = {
   manualPaymentLink: '',
   is_public: false,
   upiId: '',
+  customization: INITIAL_CUSTOMIZATION_STATE,
+  type: 'invoice',
+  status: 'draft',
 };
 
 export const AVAILABLE_TEMPLATES: InvoiceTemplateInfo[] = [
@@ -209,6 +275,41 @@ export const AVAILABLE_TEMPLATES: InvoiceTemplateInfo[] = [
     name: 'Luxury Gold Leaf',
     description: 'Deep, rich backgrounds (black, navy) with elegant gold foil-like accents and serif fonts.',
     component: LuxuryGoldTemplate as React.FC<InvoiceTemplateProps>,
-    thumbnailUrl: 'https://picsum.photos/seed/luxurygold/300/200'
-  } 
+    thumbnailUrl: 'https://picsum.photos/seed/luxurygold/300/200',
+  },
+  {
+    id: 'custom',
+    name: 'Fully Customizable',
+    description: 'A flexible template where you control the colors, fonts, and layout. Make it truly yours.',
+    component: CustomTemplate as React.FC<InvoiceTemplateProps>,
+    thumbnailUrl: 'https://picsum.photos/seed/custom/300/200',
+  },
+  {
+    id: 'swiss',
+    name: 'Swiss Modern',
+    description: 'Ultra-clean, minimalist design focusing on typography and whitespace for a sharp, professional look.',
+    component: SwissModernTemplate as React.FC<InvoiceTemplateProps>,
+    thumbnailUrl: 'https://picsum.photos/seed/swiss/300/200',
+  },
+  {
+    id: 'sketch',
+    name: 'Hand-Drawn Sketch',
+    description: 'Charming and friendly, uses handwritten fonts and doodle-like elements for a personal touch.',
+    component: HandDrawnSketchTemplate as React.FC<InvoiceTemplateProps>,
+    thumbnailUrl: 'https://picsum.photos/seed/sketch/300/200',
+  },
+  {
+    id: 'floral',
+    name: 'Floral Botanical',
+    description: 'Elegant and sophisticated, featuring delicate floral illustrations and graceful script fonts.',
+    component: FloralBotanicalTemplate as React.FC<InvoiceTemplateProps>,
+    thumbnailUrl: 'https://picsum.photos/seed/floral/300/200',
+  },
+  {
+    id: 'cyberpunk',
+    name: 'Cyberpunk Glitch',
+    description: 'A futuristic, high-tech design with neon accents and a cool, retro-digital vibe.',
+    component: CyberpunkGlitchTemplate as React.FC<InvoiceTemplateProps>,
+    thumbnailUrl: 'https://picsum.photos/seed/cyberpunk/300/200',
+  },
 ];

@@ -1,5 +1,7 @@
 
 
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +15,7 @@ const RusticCharmTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     // Intended background: Wood texture or burlap. Using gradient for simulation.
@@ -30,11 +33,11 @@ const RusticCharmTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
       </header>
 
       <div className="flex justify-between items-start mb-10">
-        <h1 className="text-3xl font-semibold text-stone-800 uppercase tracking-wider">Invoice</h1>
+        <h1 className="text-3xl font-semibold text-stone-800 uppercase tracking-wider">{isQuote ? 'Quote' : 'Invoice'}</h1>
         <div className="text-right text-sm">
-            <p><strong className="text-stone-600">Invoice No.:</strong> {invoice.id}</p>
+            <p><strong className="text-stone-600">{isQuote ? 'Quote No.:' : 'Invoice No.:'}</strong> {invoice.id}</p>
             <p><strong className="text-stone-600">Date:</strong> {new Date(invoice.date).toLocaleDateString()}</p>
-            <p><strong className="text-stone-600">Due By:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
+            <p><strong className="text-stone-600">{isQuote ? 'Valid Until:' : 'Due By:'}</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
         </div>
       </div>
 
@@ -72,7 +75,7 @@ const RusticCharmTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
         <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="border border-stone-300 p-4 bg-white/50 rounded shadow-sm space-y-3 text-center md:text-left print:bg-slate-50">
               <h4 className="font-semibold text-stone-700 mb-2 text-md tracking-wide">Payment Methods</h4>
               {qrCodeDataUrl && (
@@ -126,7 +129,7 @@ const RusticCharmTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
             </div>
           )}
           <div className="flex justify-between pt-3 border-t-2 border-stone-500 mt-3">
-            <span className="font-bold text-xl text-stone-800">Total Amount Due:</span>
+            <span className="font-bold text-xl text-stone-800">{isQuote ? 'Total Estimate:' : 'Total Amount Due:'}</span>
             <span className="font-bold text-xl text-stone-800">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>

@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
@@ -11,11 +13,12 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     <div className="p-6 md:p-10 font-sans bg-white text-neutral-darkest print:p-0">
       {/* Header with Background */}
-      <header className="bg-primary-DEFAULT text-white p-8 rounded-t-lg -mx-6 -mt-6 md:-mx-10 md:-mt-10 print:bg-slate-700 print:text-white print:rounded-none print:m-0">
+      <header className="bg-primary text-white p-8 rounded-t-lg -mx-6 -mt-6 md:-mx-10 md:-mt-10 print:bg-slate-700 print:text-white print:rounded-none print:m-0">
         <div className="flex justify-between items-center">
           <div>
             {invoice.sender.logoUrl ? (
@@ -26,7 +29,7 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
             <p className="text-sm opacity-90">{invoice.sender.address}</p>
           </div>
           <div className="text-right">
-            <h1 className="text-4xl font-extrabold tracking-tight">INVOICE</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight uppercase">{isQuote ? 'Quote' : 'Invoice'}</h1>
             <p className="text-lg opacity-90"># {invoice.id}</p>
           </div>
         </div>
@@ -50,7 +53,7 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
         </div>
         <div className="md:col-span-1 text-left md:text-right">
           <p><strong className="text-neutral-DEFAULT font-medium">Date Issued:</strong> {new Date(invoice.date).toLocaleDateString()}</p>
-          <p><strong className="text-neutral-DEFAULT font-medium">Due Date:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
+          <p><strong className="text-neutral-DEFAULT font-medium">{isQuote ? 'Valid Until:' : 'Due Date:'}</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
         </div>
       </section>
 
@@ -81,7 +84,7 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-8 mt-10">
         <div className="w-full md:w-1/2">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="mt-4">
               <h4 className="font-semibold text-neutral-darkest mb-3 text-lg">Payment Details</h4>
               <div className="flex items-center gap-6">
@@ -97,7 +100,7 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
                       href={upiLink} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="inline-block px-5 py-2 bg-primary-DEFAULT text-white text-sm font-medium rounded-md shadow-md hover:bg-primary-dark transition-colors"
+                      className="inline-block px-5 py-2 bg-primary text-white text-sm font-medium rounded-md shadow-md hover:bg-primary-dark transition-colors"
                     >
                       Pay Now via UPI
                     </a>
@@ -107,7 +110,7 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
                         href={invoice.manualPaymentLink} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="inline-block px-5 py-2 bg-secondary-DEFAULT text-white text-sm font-medium rounded-md shadow-md hover:bg-secondary-dark transition-colors"
+                        className="inline-block px-5 py-2 bg-secondary text-darkest text-sm font-medium rounded-md shadow-md hover:bg-gray-200 transition-colors"
                     >
                         Pay Online
                     </a>
@@ -135,13 +138,28 @@ const ModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
                 <span className="text-red-500 font-semibold">- {invoice.currency} {discountAmount.toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between pt-3 border-t-2 border-primary-DEFAULT mt-3">
-              <span className="font-bold text-xl text-primary-dark">Total Due:</span>
+            <div className="flex justify-between pt-3 border-t-2 border-primary mt-3">
+              <span className="font-bold text-xl text-primary-dark">{isQuote ? 'Total Estimate:' : 'Total Due:'}</span>
               <span className="font-bold text-xl text-primary-dark">{invoice.currency} {total.toFixed(2)}</span>
             </div>
           </div>
         </div>
       </section>
+
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <section className="mt-10 pt-6 border-t border-neutral-light">
+          <h4 className="font-semibold text-neutral-darkest mb-2 text-md">Attachments</h4>
+          <ul className="list-disc list-inside text-sm text-neutral-DEFAULT space-y-1">
+            {invoice.attachments.map(att => (
+              <li key={att.name}>
+                <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {att.name} ({(att.size / 1024).toFixed(2)} KB)
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {(invoice.notes || invoice.terms) && (
       <section className="mt-10 pt-6 border-t border-neutral-light text-sm text-neutral-DEFAULT">

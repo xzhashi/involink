@@ -18,18 +18,18 @@ const Button: React.FC<ButtonProps> = ({
   title, // Destructure title
   ...props 
 }) => {
-  const baseStyles = 'font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-150 ease-in-out inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow hover:shadow-md';
+  const baseStyles = 'font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ease-in-out inline-flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed transform-gpu hover:-translate-y-px active:scale-[.98]';
   
   const variantStyles = {
-    primary: 'bg-gradient-to-r from-primary-light to-primary-DEFAULT hover:from-primary-DEFAULT hover:to-primary-dark text-white focus:ring-primary-DEFAULT',
-    secondary: 'bg-gradient-to-r from-secondary-light to-secondary-DEFAULT hover:from-secondary-DEFAULT hover:to-secondary-dark text-white focus:ring-secondary-DEFAULT',
-    danger: 'bg-gradient-to-r from-red-400 to-red-600 hover:from-red-500 hover:to-red-700 text-white focus:ring-red-500',
-    ghost: 'bg-transparent text-primary-DEFAULT hover:bg-primary-light/20 focus:ring-primary-DEFAULT shadow-none hover:shadow-none',
+    primary: 'bg-primary text-white shadow-md hover:bg-primary-dark focus:ring-primary hover:shadow-lg',
+    secondary: 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 hover:border-slate-300 focus:ring-slate-300 shadow-sm',
+    danger: 'bg-red-600 text-white shadow-md hover:bg-red-700 focus:ring-red-500 hover:shadow-lg',
+    ghost: 'bg-transparent text-primary hover:bg-slate-100 focus:ring-primary shadow-none',
   };
 
   const sizeStyles = {
     sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2 text-sm',
+    md: 'px-5 py-2.5 text-sm',
     lg: 'px-6 py-3 text-base',
   };
 
@@ -39,9 +39,9 @@ const Button: React.FC<ButtonProps> = ({
       title={title} // Apply title attribute
       {...props}
     >
-      {leftIcon && <span className="mr-2 -ml-0.5 h-5 w-5">{leftIcon}</span>}
+      {leftIcon && <span className="mr-2 -ml-1">{leftIcon}</span>}
       {children}
-      {rightIcon && <span className="ml-2 -mr-0.5 h-5 w-5">{rightIcon}</span>}
+      {rightIcon && <span className="ml-2 -mr-1">{rightIcon}</span>}
     </button>
   );
 };

@@ -37,6 +37,7 @@ const AdminPlansView: React.FC = () => {
       name: '', 
       price: '0', 
       price_suffix: '/mo', 
+      billing_cycle: 'monthly',
       features: ['New Feature'], 
       cta_text: 'Choose Plan',
       has_branding: false,
@@ -69,6 +70,7 @@ const AdminPlansView: React.FC = () => {
       name: currentPlan.name || 'Unnamed Plan',
       price: currentPlan.price || '0',
       price_suffix: currentPlan.price_suffix || (currentPlan.price === '0' ? '' : '/mo'), 
+      billing_cycle: currentPlan.billing_cycle || 'monthly',
       features: currentPlan.features || [],
       cta_text: currentPlan.cta_text || 'Choose Plan',
       invoice_limit: currentPlan.invoice_limit === null ? null : Number(currentPlan.invoice_limit ?? 0),
@@ -199,6 +201,7 @@ const AdminPlansView: React.FC = () => {
                 <th scope="col" className="px-6 py-3">Order</th>
                 <th scope="col" className="px-6 py-3">Name</th>
                 <th scope="col" className="px-6 py-3">Price</th>
+                <th scope="col" className="px-6 py-3">Billing Cycle</th>
                 <th scope="col" className="px-6 py-3">Invoice Limit</th>
                 <th scope="col" className="px-6 py-3">Has Branding</th>
                 <th scope="col" className="px-6 py-3">Actions</th>
@@ -210,6 +213,7 @@ const AdminPlansView: React.FC = () => {
                   <td className="px-6 py-4">{plan.sort_order}</td>
                   <td className="px-6 py-4 font-medium text-neutral-darkest">{plan.name}</td>
                   <td className="px-6 py-4">${plan.price}{plan.price_suffix}</td>
+                  <td className="px-6 py-4 capitalize">{plan.billing_cycle}</td>
                   <td className="px-6 py-4">{plan.invoice_limit === null ? 'Unlimited' : plan.invoice_limit}</td>
                   <td className="px-6 py-4">{plan.has_branding ? 'Yes' : 'No'}</td>
                   <td className="px-6 py-4 space-x-2">
@@ -245,6 +249,17 @@ const AdminPlansView: React.FC = () => {
                 <Input label="Price (e.g., 15)" name="price" type="text" value={currentPlan.price || ''} onChange={handleModalInputChange} required disabled={isProcessing} />
                 <Input label="Price Suffix (e.g., /mo)" name="price_suffix" value={currentPlan.price_suffix || ''} onChange={handleModalInputChange} disabled={isProcessing} />
               </div>
+               <Select
+                label="Billing Cycle"
+                name="billing_cycle"
+                value={currentPlan.billing_cycle || 'monthly'}
+                onChange={handleModalInputChange}
+                options={[
+                  { value: 'monthly', label: 'Monthly' },
+                  { value: 'annually', label: 'Annually' },
+                ]}
+                disabled={isProcessing}
+              />
               <Input label="Invoice Limit" name="invoice_limit" type="text" value={currentPlan.invoice_limit === null ? 'null' : (currentPlan.invoice_limit ?? '').toString()} onChange={handleModalInputChange} placeholder="A number, or 'null' for unlimited" required disabled={isProcessing} />
               <div>
                 <label className="block text-sm font-medium text-neutral-dark mb-1">Features</label>

@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
@@ -11,6 +13,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     <div className="p-8 font-sans bg-neutral-lightest text-neutral-darkest shadow-2xl rounded-lg print:p-0 print:shadow-none print:rounded-none">
@@ -29,7 +32,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
             <p className="text-xs opacity-80 max-w-xs">{invoice.sender.address}</p>
           </div>
           <div className="text-right">
-            <h1 className="text-5xl font-black tracking-tighter">INVOICE</h1>
+            <h1 className="text-5xl font-black tracking-tighter uppercase">{isQuote ? 'Quote' : 'Invoice'}</h1>
             <p className="text-md opacity-90"># {invoice.id}</p>
           </div>
         </div>
@@ -49,7 +52,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
             <span className="text-neutral-darkest">{new Date(invoice.date).toLocaleDateString()}</span>
           </div>
           <div>
-            <span className="text-sm font-semibold text-accent-dark block">DUE DATE:</span>
+            <span className="text-sm font-semibold text-accent-dark block">{isQuote ? 'VALID UNTIL:' : 'DUE DATE:'}</span>
             <span className="text-neutral-darkest">{new Date(invoice.dueDate).toLocaleDateString()}</span>
           </div>
         </div>
@@ -82,7 +85,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
          <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="bg-white p-4 rounded-md shadow text-center space-y-3">
               <h4 className="font-semibold text-secondary-dark mb-2 text-md">Quick Pay</h4>
               {qrCodeDataUrl && (
@@ -135,11 +138,26 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
             </div>
           )}
           <div className="flex justify-between items-center pt-3 border-t border-neutral-light mt-2">
-            <span className="font-bold text-xl text-accent-dark">TOTAL:</span>
+            <span className="font-bold text-xl text-accent-dark">{isQuote ? 'TOTAL:' : 'DUE:'}</span>
             <span className="font-bold text-xl text-accent-dark">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>
       </section>
+
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <section className="mt-8 bg-white p-4 rounded-md shadow">
+          <h4 className="font-semibold text-secondary-dark mb-2 text-md">Attached Files</h4>
+          <ul className="list-disc list-inside text-sm text-neutral-DEFAULT space-y-1">
+            {invoice.attachments.map(att => (
+              <li key={att.name}>
+                <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-accent-dark hover:underline">
+                  {att.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {(invoice.notes || invoice.terms) && (
       <section className="mt-8 text-xs">

@@ -1,5 +1,5 @@
 {
-  "name": "copy-of-invoice-maker-by-linkfc---online-invoice-maker",
+  "name": "design-copy-of-copy-of-invoice-maker-by-linkfc---online-invoice-maker",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,11 @@
     "react": "^19.1.0",
     "react-router-dom": "^6.24.0",
     "qrcode": "^1.5.4",
-    "@supabase/supabase-js": "^2.50.2"
+    "@supabase/supabase-js": "^2.50.2",
+    "chart.js": "^4.4.3",
+    "react-chartjs-2": "^5.2.0",
+    "@supabase/gotrue-js": "^2.70.0",
+    "@google/genai": "^1.8.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

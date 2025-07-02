@@ -1,5 +1,7 @@
 
 
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
@@ -13,6 +15,7 @@ const WatercolorWashTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     // Intended background: Soft, blended watercolor splotches (e.g., light blues, pinks, yellows).
@@ -29,7 +32,7 @@ const WatercolorWashTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
           <p className="text-sm text-slate-500">{invoice.sender.address}</p>
         </div>
         <div className="text-left sm:text-right mt-4 sm:mt-0">
-          <h1 className="text-4xl font-extrabold uppercase tracking-tight text-pink-500">Invoice</h1>
+          <h1 className="text-4xl font-extrabold uppercase tracking-tight text-pink-500">{isQuote ? 'Quote' : 'Invoice'}</h1>
           <p className="text-md text-slate-600"># {invoice.id}</p>
         </div>
       </header>
@@ -43,7 +46,7 @@ const WatercolorWashTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
         </div>
         <div className="bg-white/60 p-5 rounded-lg shadow-sm backdrop-blur-sm border border-pink-200/50 text-left md:text-right">
           <p className="mb-1"><strong className="text-slate-600 font-medium">Date Issued:</strong> {new Date(invoice.date).toLocaleDateString()}</p>
-          <p><strong className="text-slate-600 font-medium">Payment Due:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
+          <p><strong className="text-slate-600 font-medium">{isQuote ? 'Valid Until:' : 'Payment Due:'}</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
         </div>
       </section>
 
@@ -74,7 +77,7 @@ const WatercolorWashTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
         <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="bg-white/60 border border-pink-200/50 p-4 rounded-lg shadow-sm backdrop-blur-sm space-y-3 text-center md:text-left print:bg-slate-50">
               <h4 className="font-semibold text-pink-500 mb-2 text-md">Payment Details</h4>
               {qrCodeDataUrl && (
@@ -128,7 +131,7 @@ const WatercolorWashTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
             </div>
           )}
           <div className="flex justify-between pt-3 border-t-2 border-dashed border-pink-300 mt-3">
-            <span className="font-bold text-xl text-pink-500">Total</span>
+            <span className="font-bold text-xl text-pink-500">{isQuote ? 'Total:' : 'Total Due:'}</span>
             <span className="font-bold text-xl text-pink-500">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>

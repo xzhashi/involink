@@ -1,5 +1,7 @@
+
+
 import React from 'react';
-import { InvoiceData, InvoiceTemplateProps, PlanData } from '../../types.ts';
+import { InvoiceData, InvoiceTemplateProps, PlanData, CustomizationState } from '../../types.ts';
 import { AVAILABLE_TEMPLATES } from '../../constants.ts';
 
 interface InvoicePreviewProps {
@@ -8,9 +10,10 @@ interface InvoicePreviewProps {
   qrCodeDataUrl?: string;
   temporaryLogoUrl?: string | null; 
   userPlan?: PlanData | null; // New prop for user plan
+  customization?: CustomizationState;
 }
 
-const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, upiLink, qrCodeDataUrl, temporaryLogoUrl, userPlan }) => {
+const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, upiLink, qrCodeDataUrl, temporaryLogoUrl, userPlan, customization }) => {
   const selectedTemplateInfo = AVAILABLE_TEMPLATES.find(t => t.id === invoice.selectedTemplateId);
 
   if (!selectedTemplateInfo) {
@@ -40,6 +43,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, upiLink, qrCod
     upiLink,
     qrCodeDataUrl,
     userPlan: effectivePlan, // Pass effective plan to the template
+    customization: customization,
   };
 
   return (

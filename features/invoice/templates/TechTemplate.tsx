@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
@@ -11,6 +13,7 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     <div className="p-8 font-sans bg-gray-900 text-gray-100 rounded-lg shadow-2xl print:bg-white print:text-gray-800 print:p-0 print:shadow-none print:rounded-none">
@@ -19,7 +22,7 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
         <div className="flex justify-between items-start">
           <div>
             {invoice.sender.logoUrl ? (
-              <img src={invoice.sender.logoUrl} alt={`${invoice.sender.name} logo`} className="max-h-12 mb-3 filter brightness-0 invert" />
+              <img src={invoice.sender.logoUrl} alt={`${invoice.sender.name} logo`} className="max-h-12 mb-3 filter brightness-0 invert print:filter-none" />
             ) : (
               <h2 className="text-4xl font-black tracking-tighter">{invoice.sender.name}</h2>
             )}
@@ -27,7 +30,7 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
             {invoice.sender.email && <p className="text-xs opacity-80">{invoice.sender.email}</p>}
           </div>
           <div className="text-right">
-            <h1 className="text-5xl font-extrabold uppercase">Invoice</h1>
+            <h1 className="text-5xl font-extrabold uppercase">{isQuote ? 'Quote' : 'Invoice'}</h1>
             <p className="text-md opacity-90 mt-1"># {invoice.id}</p>
           </div>
         </div>
@@ -42,7 +45,7 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
         </div>
         <div className="bg-gray-800 p-4 rounded text-left md:text-right print:bg-gray-100">
           <p className="mb-1"><strong className="text-gray-400 print:text-gray-500 font-medium">Date Issued:</strong> <span className="text-gray-50 print:text-gray-800">{new Date(invoice.date).toLocaleDateString()}</span></p>
-          <p><strong className="text-gray-400 print:text-gray-500 font-medium">Due Date:</strong> <span className="text-gray-50 print:text-gray-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
+          <p><strong className="text-gray-400 print:text-gray-500 font-medium">{isQuote ? 'Valid Until:' : 'Due Date:'}</strong> <span className="text-gray-50 print:text-gray-800">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
         </div>
       </section>
 
@@ -73,7 +76,7 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
          <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="bg-gray-800 p-4 rounded-lg shadow-md print:bg-gray-100 text-center md:text-left space-y-3">
               <h4 className="font-semibold text-pink-400 print:text-pink-600 mb-2 text-md">Digital Payment:</h4>
               {qrCodeDataUrl && (
@@ -127,11 +130,26 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
             </div>
           )}
           <div className="flex justify-between p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md mt-2 shadow-lg print:from-purple-600 print:to-pink-600">
-            <span className="font-bold text-xl">TOTAL:</span>
+            <span className="font-bold text-xl uppercase">{isQuote ? 'Total:' : 'Due:'}</span>
             <span className="font-bold text-xl">{invoice.currency} {total.toFixed(2)}</span>
           </div>
         </div>
       </section>
+
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <section className="mt-8 pt-6 border-t border-gray-700 print:border-gray-300">
+          <h4 className="font-semibold text-purple-400 print:text-purple-600 mb-2 text-md">Attached Files</h4>
+           <ul className="list-disc list-inside text-sm text-gray-300 print:text-gray-700 space-y-1">
+            {invoice.attachments.map(att => (
+              <li key={att.name}>
+                <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:underline print:text-pink-600">
+                  {att.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {(invoice.notes || invoice.terms) && (
       <section className="mt-8 pt-6 border-t border-gray-700 print:border-gray-300 text-xs">

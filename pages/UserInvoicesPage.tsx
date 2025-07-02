@@ -1,15 +1,20 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx';
-import { fetchUserInvoicesFromSupabase, deleteInvoiceFromSupabase } from '../services/supabaseClient.ts';
-import { InvoiceData } from '../types.ts';
+import { fetchUserDocuments, deleteInvoiceFromSupabase, updateInvoiceStatus, makeInvoicePublic } from '../services/supabaseClient.ts';
+import { InvoiceData, InvoiceStatus } from '../types.ts';
 import Button from '../components/common/Button.tsx';
 import { PlusIcon } from '../components/icons/PlusIcon.tsx';
 import { PencilIcon } from '../components/icons/PencilIcon.tsx'; 
 import { TrashIcon } from '../components/icons/TrashIcon.tsx';
 import { XMarkIcon } from '../components/icons/XMarkIcon.tsx';
 import { DEFAULT_CURRENCY } from '../constants.ts';
+import StatusBadge from '../components/common/StatusBadge.tsx';
+import { ShareIcon } from '../components/icons/ShareIcon.tsx';
+import { CheckCircleIcon } from '../components/icons/CheckCircleIcon.tsx';
 
 const UserInvoicesPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -21,6 +26,8 @@ const UserInvoicesPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<InvoiceData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -33,7 +40,7 @@ const UserInvoicesPage: React.FC = () => {
       setLoadingInvoices(true);
       setError(null);
       try {
-        const userInvoices = await fetchUserInvoicesFromSupabase(user.id);
+        const userInvoices = await fetchUserDocuments(user.id, 'invoice');
         setInvoices(userInvoices);
       } catch (e: any) {
         setError(e.message || "Failed to load invoices. Please try again.");
@@ -55,7 +62,8 @@ const UserInvoicesPage: React.FC = () => {
     setIsDeleting(true);
     setError(null);
     try {
-      const { error: deleteError } = await deleteInvoiceFromSupabase(invoiceToDelete.db_id!, user.id);
+      setProcessingId(invoiceToDelete.db_id!);
+      const { error: deleteError } = await deleteInvoiceFromSupabase(invoiceToDelete.db_id!);
       if (deleteError) {
         throw deleteError;
       }
@@ -66,7 +74,45 @@ const UserInvoicesPage: React.FC = () => {
       setError(e.message || "Failed to delete invoice. Please try again.");
     } finally {
       setIsDeleting(false);
+      setProcessingId(null);
     }
+  };
+
+  const handleStatusChange = async (invoiceId: string, newStatus: InvoiceStatus) => {
+    const originalInvoices = [...invoices];
+    // Optimistically update UI
+    setInvoices(invoices.map(inv => inv.db_id === invoiceId ? { ...inv, status: newStatus } : inv));
+    
+    const { error } = await updateInvoiceStatus(invoiceId, newStatus);
+    if (error) {
+      setError(error.message);
+      // Revert UI on error
+      setInvoices(originalInvoices);
+    }
+  };
+  
+  const handleShare = async (invoice: InvoiceData) => {
+      if (!user || !invoice.db_id) return;
+      setProcessingId(invoice.db_id);
+      setError(null);
+      
+      try {
+          if (!invoice.is_public) {
+              const { success, error } = await makeInvoicePublic(invoice.db_id);
+              if (!success) throw error || new Error("Failed to make invoice public.");
+              // Optimistically update local state so we don't need to refetch
+              setInvoices(invoices.map(inv => inv.db_id === invoice.db_id ? { ...inv, is_public: true } : inv));
+          }
+
+          const shareUrl = `${window.location.origin}/#/view/invoice/${invoice.db_id}`;
+          await navigator.clipboard.writeText(shareUrl);
+          setCopiedId(invoice.db_id);
+          setTimeout(() => setCopiedId(null), 2500);
+      } catch (e: any) {
+          setError(e.message || 'Failed to share invoice.');
+      } finally {
+          setProcessingId(null);
+      }
   };
 
   if (authLoading || loadingInvoices) {
@@ -123,7 +169,7 @@ const UserInvoicesPage: React.FC = () => {
       {invoices.length === 0 && !loadingInvoices ? (
         <div className="text-center py-12 bg-white shadow-md rounded-lg">
           <svg className="mx-auto h-12 w-12 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2-2H5a2 2 0 01-2-2z" />
           </svg>
           <h3 className="mt-2 text-lg font-medium text-neutral-darkest">No invoices yet</h3>
           <p className="mt-1 text-sm text-neutral-DEFAULT">
@@ -146,55 +192,48 @@ const UserInvoicesPage: React.FC = () => {
           <ul role="list" className="divide-y divide-neutral-light">
             {invoices.map((invoice) => (
               <li key={invoice.db_id} className="px-4 py-4 sm:px-6 hover:bg-neutral-lightest transition-colors duration-150">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                   <div className="truncate">
-                    <Link to={`/invoice/${invoice.db_id}`} className="text-primary-DEFAULT hover:text-primary-dark font-semibold text-md truncate" title={`View/Edit Invoice ${invoice.id}`}>
+                    <Link to={`/invoice/${invoice.db_id}`} className="text-primary hover:text-primary-dark font-semibold text-md truncate" title={`View/Edit Invoice ${invoice.id}`}>
                       {invoice.id}
                     </Link>
-                    <p className="text-sm text-neutral-DEFAULT truncate">
+                    <p className="text-sm font-semibold text-neutral-700 truncate">
                       To: {invoice.recipient.name || 'N/A'}
                     </p>
                   </div>
-                  <div className="ml-4 flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
-                     <p className="text-sm text-neutral-darkest text-right hidden sm:block">
-                       {invoice.currency || DEFAULT_CURRENCY} {(invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) * (1 + (invoice.taxRate || 0)/100) - (invoice.discount?.type === 'fixed' ? invoice.discount.value : (invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) * (invoice.discount?.value || 0))/100)).toFixed(2)}
-                     </p>
+                  <div className="ml-auto flex-shrink-0 flex items-center space-x-1 sm:space-x-2">
+                     <StatusBadge status={invoice.status} onStatusChange={(newStatus) => handleStatusChange(invoice.db_id!, newStatus)} />
+                     <Button variant="ghost" size="sm" className="!px-2" onClick={() => handleShare(invoice)} disabled={processingId === invoice.db_id} title="Copy public link">
+                        {copiedId === invoice.db_id ? <CheckCircleIcon className="h-5 w-5 text-green-500" /> : <ShareIcon className="h-5 w-5 text-neutral-600" />}
+                     </Button>
                     <Link to={`/invoice/${invoice.db_id}`} className="inline-flex items-center">
-                      <Button variant="ghost" size="sm" className="!px-2 !py-1" title="Edit Invoice">
-                        <PencilIcon className="h-4 w-4 text-primary-DEFAULT sm:mr-1.5" />
-                        <span className="hidden sm:inline">Edit</span>
+                      <Button variant="ghost" size="sm" className="!px-2" title="Edit Invoice">
+                        <PencilIcon className="h-5 w-5 text-neutral-600" />
                       </Button>
                     </Link>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="!px-2 !py-1 !text-red-500 hover:!bg-red-50" 
+                      className="!px-2 !text-red-500 hover:!bg-red-50" 
                       onClick={() => handleDeleteClick(invoice)}
                       title="Delete Invoice"
                     >
-                      <TrashIcon className="h-4 w-4 sm:mr-1.5" />
-                      <span className="hidden sm:inline">Delete</span>
+                      <TrashIcon className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
                 <div className="mt-2 sm:flex sm:justify-between">
                   <div className="sm:flex">
-                    <p className="flex items-center text-xs text-neutral-DEFAULT">
+                    <p className="flex items-center text-xs text-neutral-500">
                       <svg className="flex-shrink-0 mr-1.5 h-4 w-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                       </svg>
                       Issued: {new Date(invoice.date).toLocaleDateString()}
                     </p>
-                    <p className="mt-1 flex items-center text-xs text-neutral-DEFAULT sm:mt-0 sm:ml-4">
-                      <svg className="flex-shrink-0 mr-1.5 h-4 w-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z" clipRule="evenodd" />
-                      </svg>
-                      Due: {new Date(invoice.dueDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                   <p className="text-xs text-neutral-darkest text-right mt-1 sm:hidden">
+                     <p className="text-xs text-neutral-800 font-semibold ml-4">
                        {invoice.currency || DEFAULT_CURRENCY} {(invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) * (1 + (invoice.taxRate || 0)/100) - (invoice.discount?.type === 'fixed' ? invoice.discount.value : (invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) * (invoice.discount?.value || 0))/100)).toFixed(2)}
                    </p>
+                  </div>
                 </div>
               </li>
             ))}

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import type { Session, User as SupabaseAuthUser, AuthResponse } from '@supabase/supabase-js';
+import type { Session, User as SupabaseAuthUser, AuthResponse, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../services/supabaseClient.ts';
 import type { User } from '../types.ts'; // Import extended User type
 
@@ -59,14 +59,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  const login = async (email: string, password_string: string): Promise<AuthResponse> => {
+  const login = async (email: string, password_string: string) => {
     setLoading(true);
     const response = await supabase.auth.signInWithPassword({ email, password: password_string });
     setLoading(false);
     return response;
   };
 
-  const signup = async (email: string, password_string: string): Promise<AuthResponse> => {
+  const signup = async (email: string, password_string: string) => {
     setLoading(true);
     const response = await supabase.auth.signUp({
       email,

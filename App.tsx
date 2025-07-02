@@ -1,6 +1,5 @@
 
 
-
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage.tsx';
@@ -23,10 +22,16 @@ import PublicInvoicePage from './pages/PublicInvoicePage.tsx';
 import AboutUsPage from './pages/AboutUsPage.tsx';
 import ContactUsPage from './pages/ContactUsPage.tsx';
 import MainLayout from './components/MainLayout.tsx';
+import AppLayout from './components/AppLayout.tsx';
+import CreateInvoiceLayout from './components/CreateInvoiceLayout.tsx';
+import ClientsPage from './pages/ClientsPage.tsx';
+import QuotesPage from './pages/QuotesPage.tsx';
+import RecurringPage from './pages/RecurringPage.tsx';
+import ReportsPage from './pages/ReportsPage.tsx';
 
 const PageSkeleton: React.FC = () => {
   return (
-    <div className="space-y-8 animate-pulse">
+    <div className="space-y-8 animate-pulse p-4">
       <div className="flex justify-between items-center">
         <div className="h-9 bg-slate-200 rounded w-1/3"></div>
         <div className="h-10 bg-slate-200 rounded w-32"></div>
@@ -60,7 +65,6 @@ const AdminProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) 
   }
 
   if (!user || !isAdmin) {
-    // If not admin, redirect to a general page like home or user dashboard
     return <Navigate to="/dashboard" replace />; 
   }
 
@@ -74,71 +78,50 @@ const App: React.FC = () => {
         <PlanProvider>
           <LocalizationProvider>
            <Routes>
-              {/* Routes with standard Navbar and Footer */}
+              {/* Public Routes with standard Navbar and Footer */}
               <Route element={<MainLayout />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/pricing" element={<PricingPage />} />
                   <Route path="/about" element={<AboutUsPage />} />
                   <Route path="/contact" element={<ContactUsPage />} />
-                  <Route 
-                    path="/invoices"
-                    element={
-                      <ProtectedRoute>
-                        <UserInvoicesPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route 
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <DashboardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                   <Route 
-                    path="/settings"
-                    element={
-                      <ProtectedRoute>
-                        <SettingsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route 
-                    path="/admin"
-                    element={
-                      <AdminProtectedRoute>
-                        <AdminPageLayout />
-                      </AdminProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<AdminDashboardView />} />
-                    <Route path="users" element={<AdminUsersView />} />
-                    <Route path="plans" element={<AdminPlansView />} />
-                    <Route path="payments" element={<AdminPaymentsView />} />
-                    <Route path="integrations" element={<AdminIntegrationsView />} />
-                  </Route>
-                  <Route 
-                    path="/create" 
-                    element={
-                      <ProtectedRoute>
-                        <CreateInvoicePage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                   <Route 
-                    path="/invoice/:invoiceDbId" 
-                    element={
-                      <ProtectedRoute>
-                        <CreateInvoicePage />
-                      </ProtectedRoute>
-                    } 
-                  />
               </Route>
               
-              {/* Standalone routes without the main layout */}
+              {/* Authenticated User Routes (with sidebar) */}
+              <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                 <Route path="dashboard" element={<DashboardPage />} />
+                 <Route path="invoices" element={<UserInvoicesPage />} />
+                 <Route path="quotes" element={<QuotesPage />} />
+                 <Route path="recurring" element={<RecurringPage />} />
+                 <Route path="clients" element={<ClientsPage />} />
+                 <Route path="reports" element={<ReportsPage />} />
+                 <Route path="settings" element={<SettingsPage />} />
+              </Route>
+
+              {/* Invoice creation/editing routes (focused layout without sidebar) */}
+              <Route element={<ProtectedRoute><CreateInvoiceLayout /></ProtectedRoute>}>
+                <Route path="create" element={<CreateInvoicePage />} />
+                <Route path="invoice/:invoiceDbId" element={<CreateInvoicePage />} />
+              </Route>
+
+              {/* Admin Routes */}
+              <Route 
+                path="/admin"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminPageLayout />
+                  </AdminProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboardView />} />
+                <Route path="users" element={<AdminUsersView />} />
+                <Route path="plans" element={<AdminPlansView />} />
+                <Route path="payments" element={<AdminPaymentsView />} />
+                <Route path="integrations" element={<AdminIntegrationsView />} />
+              </Route>
+              
+              {/* Standalone routes without any layout */}
               <Route path="/view/invoice/:invoiceDbId" element={<PublicInvoicePage />} />
 
               {/* Fallback route */}

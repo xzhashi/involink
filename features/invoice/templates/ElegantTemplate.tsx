@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
@@ -11,6 +13,7 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
       : invoice.discount.value;
   }
   const total = subtotal + taxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     <div className="p-10 font-serif bg-stone-50 text-stone-700 print:p-0 print:bg-white print:text-black">
@@ -26,11 +29,11 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
       </header>
 
       <div className="flex justify-between items-start mb-10">
-        <h2 className="text-3xl font-semibold text-stone-800 uppercase tracking-wider">Invoice</h2>
+        <h2 className="text-3xl font-semibold text-stone-800 uppercase tracking-wider">{isQuote ? 'Quote' : 'Invoice'}</h2>
         <div className="text-right">
             <p className="text-lg text-stone-600"># {invoice.id}</p>
             <p className="text-sm text-stone-500"><span className="font-medium">Date:</span> {new Date(invoice.date).toLocaleDateString()}</p>
-            <p className="text-sm text-stone-500"><span className="font-medium">Due:</span> {new Date(invoice.dueDate).toLocaleDateString()}</p>
+            <p className="text-sm text-stone-500"><span className="font-medium">{isQuote ? 'Valid Until:' : 'Due:'}</span> {new Date(invoice.dueDate).toLocaleDateString()}</p>
         </div>
       </div>
 
@@ -70,7 +73,7 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
       {/* Totals & Payment Section */}
       <section className="flex flex-col md:flex-row justify-between items-start mb-12 gap-8">
         <div className="w-full md:w-auto mt-6 md:mt-0 order-last md:order-first">
-            {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+            {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="border border-stone-200 p-4 rounded-md bg-stone-100 print:bg-stone-50 space-y-3">
                 <h4 className="font-semibold text-stone-700 mb-2 text-md tracking-wider uppercase">Payment Information</h4>
                 {qrCodeDataUrl && (
@@ -125,12 +128,27 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
               </div>
             )}
             <div className="flex justify-between pt-3 border-t-2 border-stone-400 mt-3">
-              <span className="font-bold text-xl text-stone-800">Total:</span>
+              <span className="font-bold text-xl text-stone-800">{isQuote ? 'Total:' : 'Total Due:'}</span>
               <span className="font-bold text-xl text-stone-800">{invoice.currency} {total.toFixed(2)}</span>
             </div>
           </div>
         </div>
       </section>
+
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <section className="mt-12 pt-8 border-t border-stone-300 text-xs text-stone-600">
+            <h4 className="font-semibold text-stone-700 mb-2 uppercase tracking-wider">Attachments</h4>
+             <ul className="list-disc list-inside space-y-1">
+                {invoice.attachments.map(att => (
+                <li key={att.name}>
+                    <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-stone-700 hover:text-black hover:underline">
+                    {att.name}
+                    </a>
+                </li>
+                ))}
+            </ul>
+        </section>
+      )}
 
       {(invoice.notes || invoice.terms) && (
       <section className="mt-12 pt-8 border-t border-stone-300 text-xs text-stone-600">

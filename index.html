@@ -8,44 +8,38 @@
   
   <!-- PWA & Mobile Meta Tags -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#3B82F6">
+  <meta name="theme-color" content="#111827">
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=Poppins:wght@300;400;600&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300&family=Satisfy&family=Caveat&family=Indie+Flower&family=Patrick+Hand&family=Quicksand:wght@400;500;700&family=Dancing+Script:wght@400;700&family=Press+Start+2P&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=Poppins:wght@300;400;600&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300&family=Satisfy&family=Caveat&family=Indie+Flower&family=Patrick+Hand&family=Quicksand:wght@400;500;700&family=Dancing+Script:wght@400;700&family=Press+Start+2P&family=Roboto+Condensed:wght@400;700&family=Gochi+Hand&family=Lora:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             primary: {
-              DEFAULT: '#3B82F6', // blue-500
-              light: '#60A5FA', // blue-400
-              dark: '#2563EB',  // blue-600
+              DEFAULT: '#111827', // Almost black
+              dark: '#000000',
             },
-            secondary: {
-              DEFAULT: '#10B981', // emerald-500
-              light: '#34D399', // emerald-400
-              dark: '#059669',  // emerald-600
-            },
-            accent: {
-              DEFAULT: '#F59E0B', // amber-500
-              light: '#FBBF24', // amber-400
-              dark: '#D97706',  // amber-600
-            },
-            neutral: { // Updated neutral palette
-              lightest: '#F8FAFC', // slate-50 (was gray-50)
-              light: '#F1F5F9',    // slate-100 (was gray-100)
-              DEFAULT: '#64748B',   // slate-500 (was gray-500)
-              dark: '#334155',     // slate-700 (was gray-700)
-              darkest: '#1E293B',  // slate-800 (was gray-800)
+            secondary: '#F3F4F6', // light gray
+            light: '#ffffff',
+            'off-white': '#F9FAFB', // very light gray for body
+            dark: '#111827',
+            accent: '#9CA3AF', // medium gray
+            neutral: {
+              lightest: '#F9FAFB',
+              light: '#F3F4F6',
+              DEFAULT: '#6B7280',
+              dark: '#374151',
+              darkest: '#111827',
             },
           },
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
-            // Add custom fonts used in templates here if needed globally,
-            // or ensure they are loaded via the Google Fonts link.
             'playfair': ['"Playfair Display"', 'serif'],
             'lato': ['Lato', 'sans-serif'],
             'cinzel': ['Cinzel', 'serif'],
@@ -55,11 +49,14 @@
              'quicksand': ['Quicksand', 'sans-serif'],
              'dancing-script': ['"Dancing Script"', 'cursive'],
              'indie-flower': ['"Indie Flower"', 'cursive'],
+             'gochi-hand': ['"Gochi Hand"', 'cursive'],
+             'lora': ['Lora', 'serif'],
+             'vt323': ['VT323', 'monospace'],
           },
         },
       },
       plugins: [],
-    }; // Added semicolon here
+    };
   </script>
   <link rel="stylesheet" href="./index.css">
 <script type="importmap">
@@ -70,14 +67,18 @@
     "react": "https://esm.sh/react@^19.1.0",
     "react-router-dom": "https://esm.sh/react-router-dom@^6.24.0",
     "qrcode": "https://esm.sh/qrcode@^1.5.4",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.50.2"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.50.2",
+    "chart.js": "https://esm.sh/chart.js@^4.4.3",
+    "react-chartjs-2": "https://esm.sh/react-chartjs-2@^5.2.0",
+    "@supabase/gotrue-js": "https://esm.sh/@supabase/gotrue-js@^2.70.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.8.0"
   }
 }
 </script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-neutral-lightest text-neutral-darkest">
+<body class="bg-off-white text-darkest">
   <div id="root"></div>
   <script type="module" src="./index.tsx"></script>
   <script>
