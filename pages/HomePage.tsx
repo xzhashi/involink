@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import Button from '../components/common/Button.tsx';
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 import { AVAILABLE_TEMPLATES } from '../constants.ts';
@@ -12,10 +12,11 @@ import { PaletteIcon } from '../components/icons/PaletteIcon.tsx';
 import { QuoteIcon } from '../components/icons/QuoteIcon.tsx';
 import { StarIcon } from '../components/icons/StarIcon.tsx';
 
+const { Link } = ReactRouterDOM;
 
 const FeatureCard: React.FC<{ title: string; description: string; icon: React.ReactNode }> = ({ title, description, icon }) => (
   <div className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-purple-200/50 transition-all duration-300 transform hover:-translate-y-2 flex flex-col items-start border border-slate-100 hover:border-purple-300">
-    <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-2xl shadow-lg mb-6">
+    <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-700 text-white rounded-2xl shadow-lg mb-6">
       {icon}
     </div>
     <h3 className="text-2xl font-bold text-slate-800 mb-3">{title}</h3>
@@ -111,17 +112,17 @@ const HomePage: React.FC = () => {
            </div>
            
            <div className="relative bg-white p-8 rounded-2xl shadow-xl z-10 border border-slate-100 hover:border-purple-300 transition-all transform hover:-translate-y-2">
-               <div className="flex items-center text-purple-600 font-bold mb-4"><span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white font-black text-lg mr-4 shadow-lg">1</span> CHOOSE</div>
+               <div className="flex items-center text-purple-600 font-bold mb-4"><span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 text-white font-black text-lg mr-4 shadow-lg">1</span> CHOOSE</div>
                <h3 className="text-xl font-bold text-slate-800 mb-2">Select a Template</h3>
                <p className="text-slate-600">Pick a design that reflects your brand's personality from our diverse collection.</p>
            </div>
            <div className="relative bg-white p-8 rounded-2xl shadow-xl z-10 border border-slate-100 hover:border-purple-300 transition-all transform hover:-translate-y-2">
-               <div className="flex items-center text-purple-600 font-bold mb-4"><span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white font-black text-lg mr-4 shadow-lg">2</span> CUSTOMIZE</div>
+               <div className="flex items-center text-purple-600 font-bold mb-4"><span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 text-white font-black text-lg mr-4 shadow-lg">2</span> CUSTOMIZE</div>
                <h3 className="text-xl font-bold text-slate-800 mb-2">Add Your Details</h3>
                <p className="text-slate-600">Fill in your items, client info, and payment details. Add your own branding.</p>
            </div>
            <div className="relative bg-white p-8 rounded-2xl shadow-xl z-10 border border-slate-100 hover:border-purple-300 transition-all transform hover:-translate-y-2">
-               <div className="flex items-center text-purple-600 font-bold mb-4"><span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white font-black text-lg mr-4 shadow-lg">3</span> SEND</div>
+               <div className="flex items-center text-purple-600 font-bold mb-4"><span className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 text-white font-black text-lg mr-4 shadow-lg">3</span> SEND</div>
                <h3 className="text-xl font-bold text-slate-800 mb-2">Share or Download</h3>
                <p className="text-slate-600">Send a link to your client or download a professional PDF in seconds.</p>
            </div>
@@ -145,7 +146,7 @@ const HomePage: React.FC = () => {
                 <h3 className="text-xl font-bold text-slate-800 mb-2">{template.name}</h3>
                 <p className="text-slate-600 text-sm mb-4 flex-grow leading-relaxed">{template.description}</p>
                 <Link to="/create" state={{ initialTemplateId: template.id }} className="mt-auto block">
-                  <Button variant="secondary" size="md" className="w-full !font-bold text-slate-700 bg-slate-100 border-slate-200 group-hover:bg-gradient-to-r group-hover:from-purple-500 group-hover:to-pink-500 group-hover:text-white group-hover:border-transparent transition-all duration-300">
+                  <Button variant="secondary" size="md" className="w-full !font-bold text-slate-700 bg-slate-100 border-slate-200 group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-purple-700 group-hover:text-white group-hover:border-transparent transition-all duration-300">
                     Use this Template
                   </Button>
                 </Link>
@@ -158,7 +159,8 @@ const HomePage: React.FC = () => {
                 <Link to="/create">
                      <Button 
                         size="lg" 
-                        className="!px-10 !py-4 shadow-lg hover:shadow-xl transform hover:scale-105 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                        variant="primary"
+                        className="!px-10 !py-4 shadow-lg hover:shadow-xl transform hover:scale-105"
                      >
                         Explore All Templates & Create
                      </Button>
@@ -230,7 +232,7 @@ const HomePage: React.FC = () => {
 
       {/* Final CTA Section */}
        <section className="container mx-auto px-4">
-            <div className="relative text-center py-16 sm:py-20 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="relative text-center py-16 sm:py-20 bg-gradient-to-r from-purple-400 to-purple-700 rounded-2xl shadow-2xl overflow-hidden">
                 <AbstractHeroPattern className="absolute inset-0 w-full h-full object-cover opacity-10 text-white" />
                  <div className="relative z-10 text-white px-4">
                     <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Ready to Revolutionize Your Invoicing?</h2>

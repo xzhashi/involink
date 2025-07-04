@@ -1,7 +1,10 @@
 
+
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { ArrowLeftIcon } from './icons/ArrowLeftIcon.tsx';
+
+const { Outlet, Link, useLocation } = ReactRouterDOM;
 
 const CreateInvoiceLayout: React.FC = () => {
     const location = useLocation();

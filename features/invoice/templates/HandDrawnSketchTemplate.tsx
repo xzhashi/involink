@@ -1,16 +1,18 @@
+
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const HandDrawnSketchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const HandDrawnSketchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   const headingFont = "'Gochi Hand', cursive";
   const bodyFont = "'Indie Flower', cursive";
@@ -25,7 +27,7 @@ const HandDrawnSketchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
             <p className="text-sm text-gray-600">{invoice.sender.address}</p>
           </div>
           <div className="text-right">
-            <h1 className="text-5xl font-bold uppercase text-pink-500" style={{fontFamily: headingFont}}>Invoice!</h1>
+            <h1 className="text-5xl font-bold uppercase text-pink-500" style={{fontFamily: headingFont}}>{isQuote ? 'Quote' : 'Invoice!'}</h1>
           </div>
         </header>
 
@@ -36,9 +38,9 @@ const HandDrawnSketchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
             <p>{invoice.recipient.address}</p>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p><strong>Invoice #:</strong> {invoice.id}</p>
+            <p><strong>{isQuote ? 'Quote #:' : 'Invoice #:'}</strong> {invoice.id}</p>
             <p><strong>Date:</strong> {new Date(invoice.date).toLocaleDateString()}</p>
-            <p><strong>Due By:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
+            <p><strong>{isQuote ? 'Valid By:' : 'Due By:'}</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
           </div>
         </section>
 
@@ -66,42 +68,43 @@ const HandDrawnSketchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
         </section>
 
         <section className="flex flex-col-reverse md:flex-row justify-between items-start gap-6">
-          <div className="w-full md:w-1/2">
-            {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="font-bold text-pink-600 text-lg mb-2" style={{fontFamily: headingFont}}>Pay Me Here!</h3>
-                {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="UPI QR Code" className="border-2 border-gray-300 p-1 mb-2" style={{width: '90px', height: '90px'}}/>}
-                {upiLink && <a href={upiLink} target="_blank" rel="noopener noreferrer" className="block text-blue-500 underline mb-1">UPI Link</a>}
-                {invoice.manualPaymentLink && <a href={invoice.manualPaymentLink} target="_blank" rel="noopener noreferrer" className="block text-green-600 underline">Online Payment</a>}
+          <div className="w-full md:w-auto mt-6 md:mt-0">
+            {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+              <div className="bg-white/70 p-4 rounded-lg shadow-sm border border-gray-200 text-center md:text-left">
+                <h4 className="font-bold text-gray-600 mb-2" style={{fontFamily: headingFont}}>How to Pay:</h4>
+                {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="QR Code" className="border p-1 inline-block bg-white mb-2" style={{width: '80px', height: '80px'}}/>}
+                {upiLink && <a href={upiLink} target="_blank" rel="noopener noreferrer" className="block text-sm text-cyan-600 hover:underline">Pay with UPI</a>}
+                {invoice.manualPaymentLink && <a href={invoice.manualPaymentLink} target="_blank" rel="noopener noreferrer" className="block text-sm text-pink-600 hover:underline mt-1">Other Payment Link</a>}
               </div>
             )}
-            {invoice.notes && (
-                <div className="mt-4">
-                  <h3 className="font-bold text-cyan-700">A little note:</h3>
-                  <p className="text-gray-600 italic">{invoice.notes}</p>
-                </div>
-            )}
           </div>
-          <div className="w-full md:w-2/5 text-right space-y-2">
-            <p>Subtotal: <span>{invoice.currency} {subtotal.toFixed(2)}</span></p>
-            {invoice.taxRate > 0 && <p>Tax ({invoice.taxRate}%): <span>{invoice.currency} {taxAmount.toFixed(2)}</span></p>}
-            {invoice.discount.value > 0 && <p>Discount: <span className="text-red-500">- {invoice.currency} {discountAmount.toFixed(2)}</span></p>}
-            <p className="text-2xl font-bold border-t-2 border-dashed border-gray-400 pt-2" style={{fontFamily: headingFont}}>Total: <span className="text-pink-600">{invoice.currency} {total.toFixed(2)}</span></p>
+          <div className="w-full md:w-2/5 space-y-1 text-sm bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex justify-between"><span>Subtotal:</span><span>{invoice.currency} {subtotal.toFixed(2)}</span></div>
+            {(invoice.taxes || []).map(tax => (
+                <div key={tax.id} className="flex justify-between">
+                    <span>{tax.name} ({tax.rate}%):</span>
+                    <span>{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
+                </div>
+            ))}
+            {invoice.discount.value > 0 && (<div className="flex justify-between text-red-500"><span>Discount:</span><span>- {invoice.currency} {discountAmount.toFixed(2)}</span></div>)}
+            <div className="flex justify-between text-xl font-bold pt-2 mt-2 border-t-2 border-dashed border-gray-400">
+              <span className="text-pink-600">Total:</span>
+              <span className="text-pink-600">{invoice.currency} {total.toFixed(2)}</span>
+            </div>
           </div>
         </section>
 
-        <footer className="mt-12 pt-6 text-center text-gray-500 text-xs">
-          {invoice.terms && <p className="mb-4"><strong>My Terms:</strong> {invoice.terms}</p>}
-          <p className="text-xl" style={{fontFamily: headingFont}}>Thanks a bunch!</p>
+        <footer className="mt-12 pt-6 border-t-2 border-dashed border-gray-400 text-center text-xs text-gray-500">
+          {invoice.notes && <p className="mb-2"><strong>Note:</strong> {invoice.notes}</p>}
+          {invoice.terms && <p><strong>Terms:</strong> {invoice.terms}</p>}
+          <p className="mt-6 text-lg" style={{fontFamily: headingFont}}>Thank you!</p>
           {userPlan?.has_branding && (
-            <p className="mt-4 print:text-gray-400">
-              Powered by Invoice Maker <span className="opacity-80">by LinkFC</span>
-            </p>
+            <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
+              Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
+            </div>
           )}
         </footer>
       </div>
     </div>
   );
 };
-
-export default HandDrawnSketchTemplate;

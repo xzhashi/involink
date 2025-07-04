@@ -1,7 +1,9 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar.tsx';
 import AdminNavbar from '../components/admin/AdminNavbar.tsx';
+
+const { Outlet } = ReactRouterDOM;
 
 const AdminPageLayout: React.FC = () => {
   return (

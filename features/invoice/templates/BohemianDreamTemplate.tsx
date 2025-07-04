@@ -1,17 +1,16 @@
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const BohemianDreamTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const BohemianDreamTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage'
       ? (subtotal * invoice.discount.value) / 100
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   const headingFont = "'Satisfy', cursive";
@@ -102,8 +101,10 @@ const BohemianDreamTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
             </div>
             <div className="w-full md:w-2/5 lg:w-1/3 space-y-1 text-sm ml-auto">
               <div className="flex justify-between"><span className="text-neutral-600">Subtotal:</span><span className="text-neutral-800 font-medium">{invoice.currency} {subtotal.toFixed(2)}</span></div>
-              {invoice.taxRate > 0 && (<div className="flex justify-between"><span className="text-neutral-600">Tax ({invoice.taxRate}%):</span><span className="text-neutral-800 font-medium">{invoice.currency} {taxAmount.toFixed(2)}</span></div>)}
-              {invoice.discount.value > 0 && (<div className="flex justify-between text-red-600"><span className="text-neutral-600">Discount:</span><span className="font-medium">- {invoice.currency} {discountAmount.toFixed(2)}</span></div>)}
+              {(invoice.taxes || []).map(tax => (
+                <div key={tax.id} className="flex justify-between"><span className="text-neutral-600">{tax.name} ({tax.rate}%):</span><span className="text-neutral-800 font-medium">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span></div>
+              ))}
+              {invoice.discount.value > 0 && (<div className="flex justify-between text-red-600"><span>Discount</span> <span>- {invoice.currency} {discountAmount.toFixed(2)}</span></div>)}
               <div className="flex justify-between pt-3 border-t-2 border-rose-400 mt-3">
                 <span className="font-bold text-xl text-rose-800">{isQuote ? 'Total:' : 'Total Due'}</span>
                 <span className="font-bold text-xl text-rose-800">{invoice.currency} {total.toFixed(2)}</span>
@@ -132,5 +133,3 @@ const BohemianDreamTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLin
     </div>
   );
 };
-
-export default BohemianDreamTemplate;

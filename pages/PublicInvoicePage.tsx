@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { InvoiceData } from '../types.ts';
 import { fetchPublicInvoiceByIdFromSupabase } from '../services/supabaseClient.ts';
 import InvoicePreview from '../features/invoice/InvoicePreview.tsx';
@@ -7,6 +7,8 @@ import Button from '../components/common/Button.tsx';
 import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 import { generateUpiDetails, calculateInvoiceTotal } from '../utils.ts';
+
+const { useParams, Link } = ReactRouterDOM;
 
 const PublicInvoicePage: React.FC = () => {
     const { invoiceDbId } = useParams<{ invoiceDbId: string }>();

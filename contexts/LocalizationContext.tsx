@@ -1,51 +1,78 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+
+import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 import { DEFAULT_CURRENCY } from '../constants.ts';
+import { useAuth } from './AuthContext.tsx';
 
 interface LocalizationContextType {
   currency: string;
   countryCode: string | null;
   loading: boolean;
   error: string | null;
+  setCurrency: (currency: string) => void;
 }
 
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
 
 export const LocalizationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
+  const { user, loading: authLoading } = useAuth();
+  const [currency, setCurrencyState] = useState<string>(DEFAULT_CURRENCY);
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const setCurrency = useCallback((newCurrency: string) => {
+    setCurrencyState(newCurrency);
+  }, []);
+
   useEffect(() => {
     const fetchLocalization = async () => {
+      // Don't do anything until auth state is resolved
+      if (authLoading) {
+        setLoading(true);
+        return;
+      }
+      
       setLoading(true);
+      setError(null);
+
+      // Priority 1: Use the logged-in user's saved preference
+      if (user?.user_metadata?.default_currency) {
+        setCurrencyState(user.user_metadata.default_currency);
+        setCountryCode(null); // Geolocation is not used if preference is set
+        setLoading(false);
+        return;
+      }
+
+      // Priority 2: Use geolocation for guests or users without a preference
       try {
-        // Using a CORS-friendly and reliable IP API
         const response = await fetch('https://ipapi.co/json/');
         if (!response.ok) {
           throw new Error(`Failed to fetch localization data: ${response.statusText}`);
         }
         const data = await response.json();
-        if (data && data.currency) {
-          setCurrency(data.currency);
-          setCountryCode(data.country_code);
+        if (data && data.country_code) {
+          const country = data.country_code;
+          setCountryCode(country);
+          if (country === 'IN') {
+            setCurrencyState('INR');
+          } else {
+            setCurrencyState('USD');
+          }
         } else {
-          // Fallback if API response is malformed but successful
-          setCurrency(DEFAULT_CURRENCY);
+          setCurrencyState(DEFAULT_CURRENCY);
         }
       } catch (err: any) {
         setError(err.message || 'Could not determine location.');
-        // Fallback to default currency on error
-        setCurrency(DEFAULT_CURRENCY);
+        setCurrencyState(DEFAULT_CURRENCY); // Fallback to default
       } finally {
         setLoading(false);
       }
     };
 
     fetchLocalization();
-  }, []);
+  }, [user, authLoading]); // Rerun when user logs in/out
 
-  const value = { currency, countryCode, loading, error };
+  const value = { currency, countryCode, loading, error, setCurrency };
 
   return (
     <LocalizationContext.Provider value={value}>

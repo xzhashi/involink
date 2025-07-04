@@ -1,7 +1,11 @@
 
+
+
 import React, { useState, useEffect, useCallback } from 'react';
+import * as ReactRouterDOM from 'react-router-dom';
 import { Client } from '../types.ts';
 import { useAuth } from '../contexts/AuthContext.tsx';
+import { usePlans } from '../contexts/PlanContext.tsx';
 import { fetchUserClients, saveClient, deleteClient } from '../services/supabaseClient.ts';
 import Button from '../components/common/Button.tsx';
 import Input from '../components/common/Input.tsx';
@@ -10,8 +14,14 @@ import { PencilIcon } from '../components/icons/PencilIcon.tsx';
 import { TrashIcon } from '../components/icons/TrashIcon.tsx';
 import { XMarkIcon } from '../components/icons/XMarkIcon.tsx';
 
+const { useLocation, useNavigate } = ReactRouterDOM;
+
 const ClientsPage: React.FC = () => {
     const { user } = useAuth();
+    const { isClientLimitReached } = usePlans();
+    const location = useLocation();
+    const navigate = useNavigate();
+
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -37,8 +47,22 @@ const ClientsPage: React.FC = () => {
     useEffect(() => {
         loadClients();
     }, [loadClients]);
+    
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('action') === 'new') {
+            handleOpenModal();
+            // Clean the URL to prevent modal from re-opening on refresh
+            navigate('/clients', { replace: true });
+        }
+    }, [location.search, navigate]);
+
 
     const handleOpenModal = (client: Partial<Client> | null = null) => {
+        if (!client && isClientLimitReached) {
+            alert("You've reached your client limit for this plan. Please upgrade to add more.");
+            return;
+        }
         if (client) {
             setCurrentClient(client);
             setIsEditing(true);
@@ -87,8 +111,8 @@ const ClientsPage: React.FC = () => {
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold text-neutral-darkest">Clients</h1>
-                <Button onClick={() => handleOpenModal()} leftIcon={<PlusIcon className="w-5 h-5"/>}>
-                    Add New Client
+                <Button onClick={() => handleOpenModal()} leftIcon={<PlusIcon className="w-5 h-5"/>} disabled={isClientLimitReached && clients.length > 0}>
+                    {isClientLimitReached ? 'Limit Reached' : 'Add New Client'}
                 </Button>
             </div>
             

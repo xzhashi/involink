@@ -1,18 +1,16 @@
-
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
-const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   return (
@@ -115,12 +113,12 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
               <span className="text-stone-600">Subtotal:</span>
               <span className="text-stone-800 font-medium">{invoice.currency} {subtotal.toFixed(2)}</span>
             </div>
-            {invoice.taxRate > 0 && (
-              <div className="flex justify-between">
-                <span className="text-stone-600">Tax ({invoice.taxRate}%):</span>
-                <span className="text-stone-800 font-medium">{invoice.currency} {taxAmount.toFixed(2)}</span>
-              </div>
-            )}
+            {(invoice.taxes || []).map(tax => (
+                <div key={tax.id} className="flex justify-between">
+                    <span className="text-stone-600">{tax.name} ({tax.rate}%):</span>
+                    <span className="text-stone-800 font-medium">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
+                </div>
+            ))}
             {invoice.discount.value > 0 && (
                <div className="flex justify-between">
                 <span className="text-stone-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
@@ -136,39 +134,39 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
       </section>
 
       {invoice.attachments && invoice.attachments.length > 0 && (
-        <section className="mt-12 pt-8 border-t border-stone-300 text-xs text-stone-600">
-            <h4 className="font-semibold text-stone-700 mb-2 uppercase tracking-wider">Attachments</h4>
-             <ul className="list-disc list-inside space-y-1">
-                {invoice.attachments.map(att => (
+          <section className="mt-10 pt-6 border-t border-stone-200 text-sm">
+            <h4 className="font-semibold text-stone-700 mb-2">Attachments</h4>
+            <ul className="list-disc list-inside space-y-1">
+              {invoice.attachments.map(att => (
                 <li key={att.name}>
-                    <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-stone-700 hover:text-black hover:underline">
+                   <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-stone-600 hover:text-black hover:underline">
                     {att.name}
-                    </a>
+                  </a>
                 </li>
-                ))}
+              ))}
             </ul>
-        </section>
+          </section>
       )}
 
       {(invoice.notes || invoice.terms) && (
-      <section className="mt-12 pt-8 border-t border-stone-300 text-xs text-stone-600">
+      <section className="mt-10 pt-6 border-t border-stone-200 text-sm text-stone-600">
         {invoice.notes && (
-          <div className="mb-6">
-            <h4 className="font-semibold text-stone-700 mb-2 uppercase tracking-wider">Notes:</h4>
-            <p className="whitespace-pre-wrap leading-relaxed">{invoice.notes}</p>
+          <div className="mb-4">
+            <h4 className="font-semibold text-stone-700 mb-1">Notes</h4>
+            <p className="whitespace-pre-wrap">{invoice.notes}</p>
           </div>
         )}
         {invoice.terms && (
           <div>
-            <h4 className="font-semibold text-stone-700 mb-2 uppercase tracking-wider">Terms & Conditions:</h4>
-            <p className="whitespace-pre-wrap leading-relaxed">{invoice.terms}</p>
+            <h4 className="font-semibold text-stone-700 mb-1">Terms & Conditions</h4>
+            <p className="whitespace-pre-wrap">{invoice.terms}</p>
           </div>
         )}
       </section>
       )}
 
-      <footer className="text-center text-xs text-stone-500 mt-16 pt-8 border-t border-stone-300">
-        <p>Your trust in our services is greatly appreciated.</p>
+      <footer className="text-center text-xs text-stone-500 mt-12 pt-6 border-t border-stone-200">
+        <p>Thank you for your business. It is a pleasure working with you.</p>
         {userPlan?.has_branding && (
           <div className="text-center text-xs text-gray-400 mt-2 print:text-gray-400">
             Powered by Invoice Maker <span className="text-[0.6rem] opacity-80">by LinkFC</span>
@@ -178,5 +176,3 @@ const ElegantTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrC
     </div>
   );
 };
-
-export default ElegantTemplate;

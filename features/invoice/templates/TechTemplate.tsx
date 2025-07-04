@@ -1,18 +1,16 @@
-
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
-const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   return (
@@ -91,7 +89,7 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
                     href={upiLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-block px-5 py-2 bg-gradient-to-r from-pink-500 to-red-500 text-white text-sm font-semibold rounded-md shadow-lg hover:from-pink-600 hover:to-red-600 transition-all"
+                    className="inline-block px-5 py-2 bg-gradient-to-r from-purple-400 to-purple-700 text-white text-sm font-semibold rounded-md shadow-lg hover:from-purple-500 hover:to-purple-800 transition-all"
                   >
                     Pay via UPI Link
                   </a>
@@ -117,12 +115,12 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
             <span className="text-gray-400 print:text-gray-600">Subtotal:</span>
             <span className="text-gray-100 font-medium print:text-gray-800">{invoice.currency} {subtotal.toFixed(2)}</span>
           </div>
-          {invoice.taxRate > 0 && (
-            <div className="flex justify-between p-2 rounded bg-gray-800 print:bg-gray-100">
-              <span className="text-gray-400 print:text-gray-600">Tax ({invoice.taxRate}%):</span>
-              <span className="text-gray-100 font-medium print:text-gray-800">{invoice.currency} {taxAmount.toFixed(2)}</span>
+          {(invoice.taxes || []).map(tax => (
+            <div key={tax.id} className="flex justify-between p-2 rounded bg-gray-800 print:bg-gray-100">
+                <span className="text-gray-400 print:text-gray-600">{tax.name} ({tax.rate}%):</span>
+                <span className="text-gray-100 font-medium print:text-gray-800">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
             </div>
-          )}
+          ))}
           {invoice.discount.value > 0 && (
              <div className="flex justify-between p-2 rounded bg-gray-800 print:bg-gray-100">
               <span className="text-gray-400 print:text-gray-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
@@ -179,5 +177,3 @@ const TechTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCode
     </div>
   );
 };
-
-export default TechTemplate;

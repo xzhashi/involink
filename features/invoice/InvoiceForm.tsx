@@ -1,26 +1,35 @@
 
+
+
+
 import React, { useState, ChangeEvent } from 'react';
-import { InvoiceData, InvoiceItem, Attachment } from '../../types.ts';
+import * as ReactRouterDOM from 'react-router-dom';
+import { InvoiceData, InvoiceItem, Attachment, Tax, Client } from '../../types.ts';
 import Input from '../../components/common/Input.tsx';
 import Textarea from '../../components/common/Textarea.tsx';
 import Button from '../../components/common/Button.tsx';
 import InvoiceItemRow from './InvoiceItemRow.tsx';
 import { PlusIcon } from '../../components/icons/PlusIcon.tsx';
 import Select from '../../components/common/Select.tsx';
-import { DEFAULT_CURRENCY } from '../../constants.ts';
+import { DEFAULT_CURRENCY, AVAILABLE_TEMPLATES } from '../../constants.ts';
 import PaymentTools from './PaymentTools.tsx'; 
 import { ChevronDownIcon } from '../../components/icons/ChevronDownIcon.tsx'; 
 import { ChevronUpIcon } from '../../components/icons/ChevronUpIcon.tsx'; 
 import { UploadIcon } from '../../components/icons/UploadIcon.tsx'; 
 import { LinkIcon } from '../../components/icons/LinkIcon.tsx'; 
-import { PaletteIcon } from '../../components/icons/PaletteIcon.tsx'; 
 import { WrenchScrewdriverIcon } from '../../components/icons/WrenchScrewdriverIcon.tsx';
 import { CURRENCY_OPTIONS } from '../../currencies.ts';
 import { TrashIcon } from '../../components/icons/TrashIcon.tsx';
+import { CubeIcon } from '../../components/icons/CubeIcon.tsx';
+import { ArrowRightIcon } from '../../components/icons/ArrowRightIcon.tsx';
+
+const { Link } = ReactRouterDOM;
 
 interface InvoiceFormProps {
   invoice: InvoiceData;
   invoiceTotal: number;
+  clients: Client[];
+  availableTaxes: Tax[];
   onInvoiceChange: <K extends keyof InvoiceData>(key: K, value: InvoiceData[K]) => void;
   onCompanyDetailsChange: (party: 'sender' | 'recipient', key: string, value: string) => void;
   onItemChange: (itemId: string, key: keyof InvoiceItem, value: string | number) => void;
@@ -28,10 +37,12 @@ interface InvoiceFormProps {
   onRemoveItem: (itemId:string) => void;
   onDiscountChange: (type: 'percentage' | 'fixed', value: number) => void;
   onUpiDetailsGenerated: (link: string, qrDataUrl: string) => void;
+  onClientSelect: (clientId: string) => void;
   temporaryLogoUrl: string | null; 
   onTemporaryLogoChange: (logoDataUrl: string | null) => void; 
   onOpenTemplateModal: () => void;
   onOpenCustomizationModal: () => void;
+  onOpenProductModal: () => void;
   onFileUpload: (files: FileList) => void;
   onFileDelete: (file: Attachment) => void;
   isUploading: boolean;
@@ -67,6 +78,8 @@ const SectionCard: React.FC<{ title: string; children: React.ReactNode; initialO
 const InvoiceForm: React.FC<InvoiceFormProps> = ({
   invoice,
   invoiceTotal,
+  clients,
+  availableTaxes,
   onInvoiceChange,
   onCompanyDetailsChange,
   onItemChange,
@@ -74,24 +87,22 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   onRemoveItem,
   onDiscountChange,
   onUpiDetailsGenerated,
+  onClientSelect,
   temporaryLogoUrl,
   onTemporaryLogoChange,
   onOpenTemplateModal,
   onOpenCustomizationModal,
+  onOpenProductModal,
   onFileUpload,
   onFileDelete,
   isUploading,
   uploadError
 }) => {
   const [logoUrlInput, setLogoUrlInput] = useState('');
+  const [selectedTaxId, setSelectedTaxId] = useState('');
 
   const handleGenericChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, key: keyof InvoiceData) => {
     onInvoiceChange(key, e.target.value);
-  };
-  
-  const handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>, key: keyof InvoiceData) => {
-    const value = parseFloat(e.target.value);
-    onInvoiceChange(key, isNaN(value) ? 0 : value);
   };
   
   const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, party: 'sender' | 'recipient', key: string) => {
@@ -102,6 +113,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) { 
+        alert("File size cannot exceed 2MB.");
         event.target.value = ''; 
         return;
       }
@@ -116,26 +128,51 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const handleUseLogoUrl = () => {
     if (logoUrlInput.trim()) {
       if (!logoUrlInput.match(/^https?:\/\/.+\.(jpg|jpeg|png|gif|svg)$/i)) {
+          alert("Please enter a valid image URL (ending in .jpg, .png, .gif, .svg)");
           return;
       }
       onTemporaryLogoChange(logoUrlInput);
     }
   };
 
-  const currentEffectiveLogo = temporaryLogoUrl || invoice.sender.logoUrl;
+  const handleAddTax = () => {
+    if (!selectedTaxId) return;
+    const taxToAdd = availableTaxes.find(t => t.id === selectedTaxId);
+    if (taxToAdd && !invoice.taxes.find(t => t.id === taxToAdd.id)) {
+        onInvoiceChange('taxes', [...invoice.taxes, taxToAdd]);
+    }
+    setSelectedTaxId('');
+  };
 
+  const handleRemoveTax = (taxId: string) => {
+    onInvoiceChange('taxes', invoice.taxes.filter(t => t.id !== taxId));
+  };
+
+  const currentEffectiveLogo = temporaryLogoUrl || invoice.sender.logoUrl;
+  const templateInfo = AVAILABLE_TEMPLATES.find(t => t.id === invoice.selectedTemplateId);
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-lg shadow space-y-2">
-        <Button 
-            onClick={onOpenTemplateModal} 
-            variant="secondary" 
-            className="w-full"
-            leftIcon={<PaletteIcon className="w-5 h-5"/>}
-        >
-            Change Design / Template
-        </Button>
+      <div 
+          className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors shadow-sm"
+          onClick={onOpenTemplateModal}
+          role="button"
+          tabIndex={0}
+          aria-label="Change invoice template"
+      >
+          <div className="flex items-center gap-4">
+              <img 
+                  src={templateInfo?.thumbnailUrl || 'https://placehold.co/80x56'} 
+                  alt={templateInfo?.name || 'Template preview'}
+                  className="w-20 h-14 object-cover rounded-md bg-slate-100 flex-shrink-0"
+              />
+              <div className="flex-grow overflow-hidden">
+                  <p className="font-semibold text-slate-800">Change Design</p>
+                  <p className="text-sm text-slate-500 truncate">Current: {templateInfo?.name || 'Unknown'}</p>
+              </div>
+              <ArrowRightIcon className="w-5 h-5 text-slate-400 flex-shrink-0" />
+          </div>
+      </div>
         {invoice.selectedTemplateId === 'custom' && (
           <Button 
             onClick={onOpenCustomizationModal} 
@@ -146,7 +183,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             Customize Template
           </Button>
         )}
-      </div>
 
       <SectionCard title="Invoice Details" initialOpen={true} isCollapsible={true}>
         <Input label="Invoice Number" id="invoiceId" value={invoice.id} onChange={(e) => handleGenericChange(e, 'id')} />
@@ -220,7 +256,26 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         <Input label="Default Logo URL (Optional)" id="senderLogoUrl" value={invoice.sender.logoUrl || ''} onChange={(e) => handleCompanyChange(e, 'sender', 'logoUrl')} placeholder="https://example.com/default-logo.png" />
       </SectionCard>
 
-      <SectionCard title="Client Company (Recipient)" initialOpen={false} isCollapsible={true}>
+      <SectionCard title="Client Company (Recipient)" initialOpen={true} isCollapsible={true}>
+        <div className="flex gap-2 items-end mb-4">
+            <Select
+                label="Select Existing Client"
+                id="client-select"
+                value={invoice.client_id || ''}
+                onChange={(e) => onClientSelect(e.target.value)}
+                options={[
+                    { value: '', label: 'Enter details manually' },
+                    ...clients.map(c => ({ value: c.id, label: c.name }))
+                ]}
+                wrapperClassName="flex-grow !mb-0"
+            />
+            <Link to="/clients?action=new" target="_blank" rel="noopener noreferrer">
+                 <Button variant="ghost" size="md" className="!h-10">
+                     New Client
+                 </Button>
+            </Link>
+        </div>
+        <div className="my-2 border-t"></div>
         <Input label="Company Name" id="recipientName" value={invoice.recipient.name} onChange={(e) => handleCompanyChange(e, 'recipient', 'name')} />
         <Textarea label="Address" id="recipientAddress" value={invoice.recipient.address} onChange={(e) => handleCompanyChange(e, 'recipient', 'address')} />
         <Input label="Email" id="recipientEmail" type="email" value={invoice.recipient.email || ''} onChange={(e) => handleCompanyChange(e, 'recipient', 'email')} />
@@ -238,7 +293,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             onRemoveItem={onRemoveItem}
           />
         ))}
-        <Button onClick={onAddItem} variant="ghost" leftIcon={<PlusIcon className="w-4 h-4" />}>Add Item</Button>
+        <div className="flex gap-2">
+            <Button onClick={onAddItem} variant="ghost" leftIcon={<PlusIcon className="w-4 h-4" />}>Add Item</Button>
+            <Button onClick={onOpenProductModal} variant="secondary" leftIcon={<CubeIcon className="w-4 h-4" />}>Add from Saved</Button>
+        </div>
       </SectionCard>
       
       <SectionCard title="Attachments" isCollapsible={true} initialOpen={false}>
@@ -279,28 +337,57 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       </SectionCard>
       
       <SectionCard title="Summary" initialOpen={false} isCollapsible={true}>
-        <Input label="Tax Rate (%)" id="taxRate" type="number" value={invoice.taxRate.toString()} onChange={(e) => handleNumericChange(e, 'taxRate')} placeholder="e.g. 10 for 10%" />
-        <div className="grid grid-cols-3 gap-2 items-end">
-            <Select 
-                label="Discount Type"
-                id="discountType"
-                value={invoice.discount.type}
-                onChange={(e) => onDiscountChange(e.target.value as 'percentage' | 'fixed', invoice.discount.value)}
-                options={[
-                    { value: 'percentage', label: 'Percentage (%)' },
-                    { value: 'fixed', label: 'Fixed Amount' },
-                ]}
-                wrapperClassName="col-span-1"
-            />
-            <Input 
-                label="Discount Value" 
-                id="discountValue" 
-                type="number" 
-                value={invoice.discount.value.toString()} 
-                onChange={(e) => onDiscountChange(invoice.discount.type, parseFloat(e.target.value) || 0)} 
-                placeholder="e.g. 5 or 50"
-                wrapperClassName="col-span-2"
-            />
+        <div className="space-y-4">
+            <div>
+                <h4 className="text-sm font-medium text-neutral-dark mb-1">Taxes</h4>
+                {invoice.taxes.map(tax => (
+                    <div key={tax.id} className="flex items-center justify-between bg-slate-50 p-2 rounded-md mb-2">
+                        <span>{tax.name} ({tax.rate}%)</span>
+                        <Button variant="ghost" size="sm" className="!p-1 text-red-500" onClick={() => handleRemoveTax(tax.id)}>
+                            <TrashIcon className="w-4 h-4" />
+                        </Button>
+                    </div>
+                ))}
+                <div className="flex items-center gap-2">
+                    <Select
+                        label=""
+                        id="tax-select"
+                        value={selectedTaxId}
+                        onChange={e => setSelectedTaxId(e.target.value)}
+                        options={[
+                            { value: '', label: 'Select a tax to add...' },
+                            ...availableTaxes.map(t => ({ value: t.id, label: `${t.name} (${t.rate}%)` }))
+                        ]}
+                        wrapperClassName="flex-grow !mb-0"
+                    />
+                    <Button onClick={handleAddTax} variant="secondary" size="md" disabled={!selectedTaxId}>Add Tax</Button>
+                </div>
+            </div>
+            <div>
+                <h4 className="text-sm font-medium text-neutral-dark mb-1">Discount</h4>
+                <div className="grid grid-cols-3 gap-2 items-end">
+                    <Select 
+                        label=""
+                        id="discountType"
+                        value={invoice.discount.type}
+                        onChange={(e) => onDiscountChange(e.target.value as 'percentage' | 'fixed', invoice.discount.value)}
+                        options={[
+                            { value: 'percentage', label: 'Percentage (%)' },
+                            { value: 'fixed', label: 'Fixed Amount' },
+                        ]}
+                        wrapperClassName="col-span-1 !mb-0"
+                    />
+                    <Input 
+                        label="" 
+                        id="discountValue" 
+                        type="number" 
+                        value={invoice.discount.value.toString()} 
+                        onChange={(e) => onDiscountChange(invoice.discount.type, parseFloat(e.target.value) || 0)} 
+                        placeholder="e.g. 5 or 50"
+                        wrapperClassName="col-span-2 !mb-0"
+                    />
+                </div>
+            </div>
         </div>
       </SectionCard>
 

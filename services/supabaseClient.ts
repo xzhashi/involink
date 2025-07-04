@@ -1,5 +1,6 @@
+
 import { createClient } from '@supabase/supabase-js';
-import { InvoiceData, InvoiceDataJson, InvoiceType, InvoiceStatus, Client, Attachment } from '../types.ts';
+import { Database, InvoiceData, InvoiceDataJson, InvoiceType, InvoiceStatus, Client, Attachment, Product, ContactSubmission, UserApiKey, Blog, Tax } from '../types.ts';
 import { INITIAL_CUSTOMIZATION_STATE } from '../constants.ts';
 
 // --- IMPORTANT DEPLOYMENT NOTE ---
@@ -9,58 +10,13 @@ const supabaseUrl = "https://linkfcinv.brandsscaler.com/";
 const supabaseAnonKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1MDkyNDAyMCwiZXhwIjo0OTA2NTk3NjIwLCJyb2xlIjoiYW5vbiJ9.iyegAqufgTE3eQTKtJTR4HDrx24aZhjM2m1aOgRMeMI";
 
 // Initialize the client.
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 
 // --- Helper Functions ---
 const getUserId = async (): Promise<string | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     return user?.id || null;
-};
-
-// --- Client Management ---
-export const fetchUserClients = async (): Promise<Client[]> => {
-    const userId = await getUserId();
-    if (!userId) return [];
-    
-    const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('user_id', userId)
-        .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-};
-
-export const saveClient = async (client: Partial<Client>): Promise<Client | null> => {
-    const userId = await getUserId();
-    if (!userId) throw new Error("User must be logged in to save a client.");
-
-    const payload = { ...client, user_id: userId, updated_at: new Date().toISOString() };
-    
-    // Upsert logic: if there's an ID, update; otherwise, insert.
-    const { data, error } = await supabase
-        .from('clients')
-        .upsert(payload)
-        .select()
-        .single();
-    
-    if (error) throw error;
-    return data;
-};
-
-export const deleteClient = async (clientId: string): Promise<{ error: any }> => {
-    const userId = await getUserId();
-    if (!userId) throw new Error("User must be logged in to delete a client.");
-
-    const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId)
-        .eq('user_id', userId); // Ensure ownership
-    
-    return { error };
 };
 
 // --- Attachments ---
@@ -114,6 +70,143 @@ export const deleteAttachment = async (filePath: string): Promise<{ success: boo
 };
 
 
+// --- Client Management ---
+export const fetchUserClients = async (): Promise<Client[]> => {
+    const userId = await getUserId();
+    if (!userId) return [];
+    
+    const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', userId)
+        .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+};
+
+export const saveClient = async (client: Partial<Client>): Promise<Client | null> => {
+    const userId = await getUserId();
+    if (!userId) throw new Error("User must be logged in to save a client.");
+
+    const payload = { ...client, user_id: userId, updated_at: new Date().toISOString() };
+    
+    // Upsert logic: if there's an ID, update; otherwise, insert.
+    const { data, error } = await supabase
+        .from('clients')
+        .upsert([payload])
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+};
+
+export const deleteClient = async (clientId: string): Promise<{ error: any }> => {
+    const userId = await getUserId();
+    if (!userId) throw new Error("User must be logged in to delete a client.");
+
+    const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId)
+        .eq('user_id', userId); // Ensure ownership
+    
+    return { error };
+};
+
+
+// --- Product/Service Management ---
+export const fetchUserProducts = async (): Promise<Product[]> => {
+    const userId = await getUserId();
+    if (!userId) return [];
+    
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', userId)
+        .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+};
+
+export const saveProduct = async (product: Partial<Product>): Promise<Product | null> => {
+    const userId = await getUserId();
+    if (!userId) throw new Error("User must be logged in to save a product.");
+
+    // Remove manual updated_at. The database trigger now handles this automatically.
+    const { updated_at, ...restOfProduct } = product; 
+    const payload = { ...restOfProduct, user_id: userId };
+    
+    const { data, error } = await supabase
+        .from('products')
+        .upsert([payload])
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+};
+
+export const deleteProduct = async (productId: string): Promise<{ error: any }> => {
+    const userId = await getUserId();
+    if (!userId) throw new Error("User must be logged in to delete a product.");
+
+    const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId)
+        .eq('user_id', userId); // Ensure ownership
+    
+    return { error };
+};
+
+// --- Tax Management ---
+export const fetchUserTaxes = async (): Promise<Tax[]> => {
+    const userId = await getUserId();
+    if (!userId) return [];
+    
+    const { data, error } = await supabase
+        .from('taxes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+};
+
+export const saveTax = async (tax: Partial<Tax>): Promise<Tax | null> => {
+    const userId = await getUserId();
+    if (!userId) throw new Error("User must be logged in to save a tax.");
+
+    const payload = { ...tax, user_id: userId };
+    
+    const { data, error } = await supabase
+        .from('taxes')
+        .upsert([payload])
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+};
+
+export const deleteTax = async (taxId: string): Promise<{ error: any }> => {
+    const userId = await getUserId();
+    if (!userId) throw new Error("User must be logged in to delete a tax.");
+
+    const { error } = await supabase
+        .from('taxes')
+        .delete()
+        .eq('id', taxId)
+        .eq('user_id', userId); 
+    
+    return { error };
+};
+
+
 // --- Invoice/Quote/Recurring Document Management ---
 
 // Converts client-side InvoiceData to what's stored in Supabase
@@ -123,18 +216,18 @@ const toSupabaseInvoiceFormat = (invoice: InvoiceData) => {
   // and also within the JSONB for data integrity and portability.
   return {
     invoice_number: id,
-    user_id,
+    user_id: user_id!,
     type: invoice.type,
     status: invoice.status,
-    client_id: invoice.client_id,
-    is_public: invoice.is_public, // This is the critical top-level field
-    recurring_frequency: invoice.recurring_frequency,
-    recurring_next_issue_date: invoice.recurring_next_issue_date,
-    recurring_end_date: invoice.recurring_end_date,
-    recurring_status: invoice.recurring_status,
-    recurring_template_id: invoice.recurring_template_id,
-    attachments: invoice.attachments,
-    invoice_data_json: { ...jsonData } // The rest of the data, including is_public, goes here
+    client_id: invoice.client_id || null,
+    is_public: invoice.is_public || false, // This is the critical top-level field
+    recurring_frequency: invoice.recurring_frequency || null,
+    recurring_next_issue_date: invoice.recurring_next_issue_date || null,
+    recurring_end_date: invoice.recurring_end_date || null,
+    recurring_status: invoice.recurring_status || null,
+    recurring_template_id: invoice.recurring_template_id || null,
+    attachments: invoice.attachments || [],
+    invoice_data_json: { ...jsonData, is_public: invoice.is_public } // The rest of the data, including is_public, goes here
   };
 };
 
@@ -153,7 +246,7 @@ const fromSupabaseInvoiceFormat = (row: any): InvoiceData => {
     items: Array.isArray(jsonData.items) ? jsonData.items : [],
     notes: jsonData.notes || '',
     terms: jsonData.terms || '',
-    taxRate: typeof jsonData.taxRate === 'number' ? jsonData.taxRate : 0,
+    taxes: Array.isArray(jsonData.taxes) ? jsonData.taxes : [],
     discount: jsonData.discount || { type: 'percentage', value: 0 },
     currency: jsonData.currency || 'USD',
     selectedTemplateId: jsonData.selectedTemplateId || 'modern',
@@ -184,9 +277,10 @@ export const saveInvoiceToSupabase = async (invoice: InvoiceData): Promise<Invoi
   
   let response;
   if (invoice.db_id) { // If db_id exists, it's an update
+    const updatePayload: Database['public']['Tables']['invoices']['Update'] = { ...payload, updated_at: new Date().toISOString() };
     response = await supabase
       .from('invoices')
-      .update({ ...payload, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', invoice.db_id)
       .eq('user_id', invoice.user_id) // Ensure user owns the invoice
       .select()
@@ -194,7 +288,7 @@ export const saveInvoiceToSupabase = async (invoice: InvoiceData): Promise<Invoi
   } else { // Otherwise, it's an insert
     response = await supabase
       .from('invoices')
-      .insert(payload)
+      .insert([payload])
       .select()
       .single();
   }
@@ -243,18 +337,60 @@ export const fetchPublicInvoiceByIdFromSupabase = async (dbId: string): Promise<
   return data ? fromSupabaseInvoiceFormat(data) : null;
 };
 
-export const fetchUserDocuments = async (userId: string, docType: InvoiceType): Promise<InvoiceData[]> => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('type', docType)
-    .order('created_at', { ascending: false });
+export const fetchUserDocuments = async (
+    userId: string, 
+    docType: InvoiceType,
+    options?: {
+        limit?: number;
+        offset?: number;
+        status?: InvoiceStatus | 'all';
+        searchQuery?: string;
+        startDate?: string;
+        endDate?: string;
+        clientId?: string | 'all';
+    }
+): Promise<InvoiceData[]> => {
+    let query = supabase
+        .from('invoices')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('type', docType);
 
-  if (error) {
-    throw error;
-  }
-  return data ? data.map(fromSupabaseInvoiceFormat) : [];
+    if (options?.status && options.status !== 'all') {
+        query = query.eq('status', options.status);
+    }
+
+    if (options?.searchQuery) {
+        const searchString = `%${options.searchQuery}%`;
+        query = query.or(`invoice_number.ilike.${searchString},invoice_data_json->>recipient->>name.ilike.${searchString}`);
+    }
+    
+    if (options?.startDate) {
+        query = query.gte('created_at', `${options.startDate}T00:00:00.000Z`);
+    }
+
+    if (options?.endDate) {
+        query = query.lte('created_at', `${options.endDate}T23:59:59.999Z`);
+    }
+    
+    if (options?.clientId && options.clientId !== 'all') {
+        query = query.eq('client_id', options.clientId);
+    }
+    
+    query = query.order('created_at', { ascending: false });
+
+    // Add pagination only if limit and offset are provided
+    if (options?.limit && options.offset !== undefined) {
+      query = query.range(options.offset, options.offset + options.limit - 1);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching user documents:", error);
+        throw error;
+    }
+    return data ? data.map(fromSupabaseInvoiceFormat) : [];
 };
 
 export const deleteInvoiceFromSupabase = async (dbId: string): Promise<{ error: any }> => {
@@ -281,19 +417,21 @@ export const makeInvoicePublic = async (dbId: string): Promise<{ success: boolea
         .eq('user_id', userId)
         .single();
     
-    if (fetchError) {
+    if (fetchError || !currentData) {
         console.error('Error fetching invoice to make public:', fetchError);
-        return { success: false, error: fetchError };
+        return { success: false, error: fetchError || { message: 'Invoice not found.' } };
     }
 
     const updatedJson = {
         ...(currentData.invoice_data_json || {}),
         is_public: true,
     };
+    
+    const payload: Database['public']['Tables']['invoices']['Update'] = { is_public: true, invoice_data_json: updatedJson };
 
     const { error } = await supabase
         .from('invoices')
-        .update({ is_public: true, invoice_data_json: updatedJson })
+        .update(payload)
         .eq('id', dbId);
     
     return { success: !error, error };
@@ -302,10 +440,12 @@ export const makeInvoicePublic = async (dbId: string): Promise<{ success: boolea
 export const updateInvoiceStatus = async (dbId: string, status: InvoiceStatus): Promise<{ error: any }> => {
     const userId = await getUserId();
     if (!userId) return { error: { message: "Not authenticated" } };
+    
+    const payload: Database['public']['Tables']['invoices']['Update'] = { status: status, updated_at: new Date().toISOString() };
 
     const { error } = await supabase
         .from('invoices')
-        .update({ status: status, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq('id', dbId)
         .eq('user_id', userId);
     
@@ -367,15 +507,96 @@ export const fetchReportsData = async () => {
 
     if (clientError) throw clientError;
 
-    return { invoices, clients };
+    return { invoices: invoices || [], clients: clients || [] };
 };
 
 // --- Contact Form Submissions ---
 export const saveContactSubmission = async (submission: { name: string; email: string; subject: string; message: string; }): Promise<{ error: any }> => {
     const { error } = await supabase
         .from('contact_submissions')
-        .insert([
-            { ...submission, is_read: false }
-        ]);
+        .insert([{ ...submission, is_read: false }]);
+    return { error };
+};
+
+// --- API Key Management ---
+export const fetchApiKeyInfo = async (): Promise<UserApiKey | null> => {
+    const { data, error } = await supabase.functions.invoke('get-api-key-info');
+    if (error) {
+        // If the error is 'Key not found', it's not a "real" error, just means no key exists.
+        if (error.context?.json?.error?.includes('not found')) {
+            return null;
+        }
+        throw error;
+    }
+    return data;
+};
+
+export const generateNewApiKey = async (): Promise<string | null> => {
+    const { data, error } = await supabase.functions.invoke('generate-api-key');
+    if (error) throw error;
+    return data?.apiKey || null;
+};
+
+export const revokeApiKey = async (): Promise<{ success: boolean }> => {
+    const { data, error } = await supabase.functions.invoke('revoke-api-key');
+    if (error) throw error;
+    return data;
+};
+
+// --- Blog ---
+export const fetchPublishedBlogs = async (): Promise<Blog[]> => {
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('*')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+};
+
+export const fetchPublishedBlogBySlug = async (slug: string): Promise<Blog | null> => {
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('*')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .single();
+    
+    if (error) {
+        if (error.code === 'PGRST116') return null; // Not found is not an error
+        throw error;
+    }
+    return data;
+};
+
+export const saveBlogAdmin = async (blog: Partial<Blog>): Promise<{ blog: Blog | null, error: any }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { blog: null, error: { message: "Not authenticated" } };
+
+    const payload = { ...blog };
+    if (!payload.author_id) {
+        payload.author_id = user.id;
+    }
+    // Set published_at timestamp if status is changing to published and it's not already set
+    if (payload.status === 'published' && !payload.published_at) {
+        payload.published_at = new Date().toISOString();
+    }
+    
+    // Omit joined fields before upsert
+    delete (payload as any).author_email; 
+    delete (payload as any).author;
+    
+    const { data, error } = await supabase
+        .from('blogs')
+        .upsert([payload])
+        .select()
+        .single();
+
+    return { blog: data, error };
+};
+
+export const deleteBlogAdmin = async (blogId: string): Promise<{ error: any }> => {
+    const { error } = await supabase.from('blogs').delete().eq('id', blogId);
     return { error };
 };

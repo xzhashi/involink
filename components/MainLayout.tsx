@@ -1,7 +1,9 @@
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import Navbar from './Navbar.tsx';
 import Footer from './Footer.tsx';
+
+const { Outlet, useLocation } = ReactRouterDOM;
 
 const MainLayout: React.FC = () => {
   const location = useLocation();

@@ -1,31 +1,30 @@
 
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
-const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   return (
     <div className="p-8 font-sans bg-neutral-lightest text-neutral-darkest shadow-2xl rounded-lg print:p-0 print:shadow-none print:rounded-none">
       {/* Decorative Header */}
-      <div className="relative mb-8 p-8 bg-gradient-to-br from-accent-DEFAULT to-secondary-light rounded-lg text-white print:from-slate-600 print:to-slate-800">
-        <div className="absolute top-0 left-0 w-16 h-16 bg-white/20 rounded-br-full print:hidden"></div>
-        <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/10 rounded-tl-full print:hidden"></div>
+      <div className="relative mb-8 p-8 bg-gradient-to-br from-slate-200 to-gray-100 rounded-lg text-neutral-darkest print:from-slate-600 print:to-slate-800 print:text-white">
+        <div className="absolute top-0 left-0 w-16 h-16 bg-slate-300/30 rounded-br-full print:hidden"></div>
+        <div className="absolute bottom-0 right-0 w-24 h-24 bg-slate-300/20 rounded-tl-full print:hidden"></div>
         
         <div className="flex justify-between items-center relative z-10">
           <div>
             {invoice.sender.logoUrl ? (
-                <img src={invoice.sender.logoUrl} alt={`${invoice.sender.name} logo`} className="max-h-12 mb-2 filter brightness-0 invert" />
+                <img src={invoice.sender.logoUrl} alt={`${invoice.sender.name} logo`} className="max-h-12 mb-2" />
               ) : (
                 <h2 className="text-2xl font-bold">{invoice.sender.name}</h2>
             )}
@@ -61,7 +60,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
       {/* Items Table */}
       <section className="mb-8 overflow-x-auto">
         <table className="w-full min-w-[600px]">
-          <thead className="bg-secondary-DEFAULT text-white print:bg-slate-700">
+          <thead className="bg-slate-800 text-white print:bg-slate-700">
             <tr>
               <th className="text-left p-3 font-semibold text-sm">ITEM DESCRIPTION</th>
               <th className="text-center p-3 font-semibold text-sm">QTY</th>
@@ -87,7 +86,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
          <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
           {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div className="bg-white p-4 rounded-md shadow text-center space-y-3">
-              <h4 className="font-semibold text-secondary-dark mb-2 text-md">Quick Pay</h4>
+              <h4 className="font-semibold text-slate-800 mb-2 text-md">Quick Pay</h4>
               {qrCodeDataUrl && (
                 <div>
                   <img src={qrCodeDataUrl} alt="UPI QR Code" className="border-2 border-accent-light p-1 rounded-md inline-block" style={{width: '110px', height: '110px'}}/>
@@ -111,7 +110,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
                         href={invoice.manualPaymentLink} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="inline-block px-6 py-2 bg-secondary-dark text-white text-sm font-bold rounded-full shadow-lg hover:bg-secondary-DEFAULT transition-all transform hover:scale-105"
+                        className="inline-block px-6 py-2 bg-slate-700 text-white text-sm font-bold rounded-full shadow-lg hover:bg-slate-800 transition-all transform hover:scale-105"
                     >
                         Make Payment Online
                     </a>
@@ -125,12 +124,12 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
             <span className="text-neutral-DEFAULT">Subtotal:</span>
             <span className="text-neutral-darkest font-medium">{invoice.currency} {subtotal.toFixed(2)}</span>
           </div>
-          {invoice.taxRate > 0 && (
-            <div className="flex justify-between">
-              <span className="text-neutral-DEFAULT">Tax ({invoice.taxRate}%):</span>
-              <span className="text-neutral-darkest font-medium">{invoice.currency} {taxAmount.toFixed(2)}</span>
-            </div>
-          )}
+          {(invoice.taxes || []).map(tax => (
+                <div key={tax.id} className="flex justify-between">
+                    <span className="text-neutral-DEFAULT">{tax.name} ({tax.rate}%):</span>
+                    <span className="text-neutral-darkest font-medium">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
+                </div>
+          ))}
           {invoice.discount.value > 0 && (
              <div className="flex justify-between">
               <span className="text-neutral-DEFAULT">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
@@ -146,7 +145,7 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
 
       {invoice.attachments && invoice.attachments.length > 0 && (
         <section className="mt-8 bg-white p-4 rounded-md shadow">
-          <h4 className="font-semibold text-secondary-dark mb-2 text-md">Attached Files</h4>
+          <h4 className="font-semibold text-slate-800 mb-2 text-md">Attached Files</h4>
           <ul className="list-disc list-inside text-sm text-neutral-DEFAULT space-y-1">
             {invoice.attachments.map(att => (
               <li key={att.name}>
@@ -163,13 +162,13 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
       <section className="mt-8 text-xs">
         {invoice.notes && (
           <div className="mb-4 bg-white p-4 rounded-md shadow">
-            <h4 className="font-semibold text-secondary-dark mb-1">A Little Note:</h4>
+            <h4 className="font-semibold text-slate-800 mb-1">A Little Note:</h4>
             <p className="text-neutral-DEFAULT whitespace-pre-wrap">{invoice.notes}</p>
           </div>
         )}
         {invoice.terms && (
           <div className="bg-white p-4 rounded-md shadow">
-            <h4 className="font-semibold text-secondary-dark mb-1">Our Terms:</h4>
+            <h4 className="font-semibold text-slate-800 mb-1">Our Terms:</h4>
             <p className="text-neutral-DEFAULT whitespace-pre-wrap">{invoice.terms}</p>
           </div>
         )}
@@ -188,5 +187,3 @@ const CreativeTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qr
     </div>
   );
 };
-
-export default CreativeTemplate;

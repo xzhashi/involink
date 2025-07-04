@@ -1,18 +1,17 @@
-
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage'
       ? (subtotal * invoice.discount.value) / 100
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   // Font: "Playfair Display", "Cormorant Garamond" for headings, "Lato" for body.
   const headingFont = "'Playfair Display', serif";
@@ -37,7 +36,7 @@ const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
               <p className="text-xs text-slate-400 print:text-slate-600 max-w-xs">{invoice.sender.address}</p>
             </div>
             <div className="text-left sm:text-right mt-4 sm:mt-0">
-              <h1 className={`text-5xl font-extrabold uppercase ${goldColor}`} style={{ fontFamily: headingFont }}>Invoice</h1>
+              <h1 className={`text-5xl font-extrabold uppercase ${goldColor}`} style={{ fontFamily: headingFont }}>{isQuote ? 'Quote' : 'Invoice'}</h1>
               <p className="text-md text-slate-300 print:text-slate-700">Ref: {invoice.id}</p>
             </div>
           </header>
@@ -51,7 +50,7 @@ const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
             </div>
             <div className="bg-slate-800/50 p-4 rounded-sm text-left md:text-right print:bg-slate-100">
               <p className="mb-1"><strong className="text-slate-400 font-medium print:text-slate-500">Date Issued:</strong> <span className="text-slate-100 print:text-black">{new Date(invoice.date).toLocaleDateString()}</span></p>
-              <p><strong className="text-slate-400 font-medium print:text-slate-500">Payment Due:</strong> <span className="text-slate-100 print:text-black">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
+              <p><strong className="text-slate-400 font-medium print:text-slate-500">{isQuote ? 'Valid Until:' : 'Payment Due:'}</strong> <span className="text-slate-100 print:text-black">{new Date(invoice.dueDate).toLocaleDateString()}</span></p>
             </div>
           </section>
 
@@ -82,7 +81,7 @@ const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
           {/* Totals & Payment Section */}
           <section className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
             <div className="w-full md:w-auto order-last md:order-first mt-6 md:mt-0">
-              {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+              {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
                 <div className="bg-slate-800/50 border border-yellow-500/30 p-4 rounded-sm space-y-3 text-center md:text-left print:bg-slate-100 print:border-slate-300">
                   <h4 className={`font-semibold ${goldColor} mb-2 text-md print:text-yellow-700`}>Payment Methods</h4>
                   {qrCodeDataUrl && (
@@ -123,12 +122,12 @@ const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
                 <span className="text-slate-400 print:text-slate-600">Subtotal</span>
                 <span className="text-slate-100 font-medium print:text-black">{invoice.currency} {subtotal.toFixed(2)}</span>
               </div>
-              {invoice.taxRate > 0 && (
-                <div className="flex justify-between p-1">
-                  <span className="text-slate-400 print:text-slate-600">Tax ({invoice.taxRate}%)</span>
-                  <span className="text-slate-100 font-medium print:text-black">{invoice.currency} {taxAmount.toFixed(2)}</span>
+              {(invoice.taxes || []).map(tax => (
+                <div key={tax.id} className="flex justify-between p-1">
+                    <span className="text-slate-400 print:text-slate-600">{tax.name} ({tax.rate}%):</span>
+                    <span className="text-slate-100 font-medium print:text-black">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
                 </div>
-              )}
+              ))}
               {invoice.discount.value > 0 && (
                  <div className="flex justify-between p-1">
                   <span className="text-slate-400 print:text-slate-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
@@ -136,7 +135,7 @@ const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
                 </div>
               )}
               <div className={`flex justify-between p-3 bg-yellow-500 text-slate-900 rounded-sm mt-2 shadow-lg print:bg-yellow-500 print:text-black`}>
-                <span className="font-black text-lg uppercase">Total Due</span>
+                <span className="font-black text-lg uppercase">{isQuote ? 'Total' : 'Total Due'}</span>
                 <span className="font-black text-lg">{invoice.currency} {total.toFixed(2)}</span>
               </div>
             </div>
@@ -173,5 +172,3 @@ const LuxuryGoldTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
     </div>
   );
 };
-
-export default LuxuryGoldTemplate;

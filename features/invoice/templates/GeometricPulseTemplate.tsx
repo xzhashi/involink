@@ -1,21 +1,16 @@
-
-
-
-
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage'
       ? (subtotal * invoice.discount.value) / 100
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   return (
@@ -120,12 +115,12 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
             <span className="text-slate-400 print:text-slate-600">Subtotal</span>
             <span className="text-slate-100 font-medium print:text-slate-800">{invoice.currency} {subtotal.toFixed(2)}</span>
           </div>
-          {invoice.taxRate > 0 && (
-            <div className="flex justify-between p-2 rounded bg-slate-800 print:bg-slate-100">
-              <span className="text-slate-400 print:text-slate-600">Tax ({invoice.taxRate}%)</span>
-              <span className="text-slate-100 font-medium print:text-slate-800">{invoice.currency} {taxAmount.toFixed(2)}</span>
+          {(invoice.taxes || []).map(tax => (
+            <div key={tax.id} className="flex justify-between p-2 rounded bg-slate-800 print:bg-slate-100">
+                <span className="text-slate-400 print:text-slate-600">{tax.name} ({tax.rate}%):</span>
+                <span className="text-slate-100 font-medium print:text-slate-800">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
             </div>
-          )}
+          ))}
           {invoice.discount.value > 0 && (
              <div className="flex justify-between p-2 rounded bg-slate-800 print:bg-slate-100">
               <span className="text-slate-400 print:text-slate-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
@@ -182,5 +177,3 @@ const GeometricPulseTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLi
     </div>
   );
 };
-
-export default GeometricPulseTemplate;

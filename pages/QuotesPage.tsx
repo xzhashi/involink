@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { fetchUserDocuments, deleteInvoiceFromSupabase, convertQuoteToInvoice } from '../services/supabaseClient.ts';
 import { InvoiceData } from '../types.ts';
@@ -10,6 +11,8 @@ import { PencilIcon } from '../components/icons/PencilIcon.tsx';
 import { TrashIcon } from '../components/icons/TrashIcon.tsx';
 import { ArrowPathIcon } from '../components/icons/ArrowPathIcon.tsx';
 import StatusBadge from '../components/common/StatusBadge.tsx';
+
+const { Link, useNavigate } = ReactRouterDOM;
 
 const QuotesPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();

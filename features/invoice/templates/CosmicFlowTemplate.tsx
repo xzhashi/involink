@@ -1,21 +1,16 @@
-
-
-
-
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage'
       ? (subtotal * invoice.discount.value) / 100
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   // Define glow styles for reusability and clarity
@@ -98,7 +93,7 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
                     href={upiLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block px-5 py-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-sm font-semibold rounded-md shadow-lg hover:from-purple-600 hover:to-fuchsia-600 transition-all"
+                    className="inline-block px-5 py-2 bg-gradient-to-r from-purple-400 to-purple-700 text-white text-sm font-semibold rounded-md shadow-lg hover:from-purple-500 hover:to-purple-800 transition-all"
                   >
                     Engage UPI Protocol
                   </a>
@@ -124,12 +119,12 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
             <span className="text-slate-400 print:text-slate-600">Aggregated Value:</span>
             <span className="text-slate-100 font-medium print:text-slate-800">{invoice.currency} {subtotal.toFixed(2)}</span>
           </div>
-          {invoice.taxRate > 0 && (
-            <div className="flex justify-between p-2 rounded bg-slate-800/70 print:bg-slate-100">
-              <span className="text-slate-400 print:text-slate-600">System Levy ({invoice.taxRate}%):</span>
-              <span className="text-slate-100 font-medium print:text-slate-800">{invoice.currency} {taxAmount.toFixed(2)}</span>
+          {(invoice.taxes || []).map(tax => (
+            <div key={tax.id} className="flex justify-between p-2 rounded bg-slate-800/70 print:bg-slate-100">
+                <span className="text-slate-400 print:text-slate-600">{tax.name} ({tax.rate}%):</span>
+                <span className="text-slate-100 font-medium print:text-slate-800">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
             </div>
-          )}
+          ))}
           {invoice.discount.value > 0 && (
              <div className="flex justify-between p-2 rounded bg-slate-800/70 print:bg-slate-100">
               <span className="text-slate-400 print:text-slate-600">Value Adjustment ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
@@ -186,5 +181,3 @@ const CosmicFlowTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
     </div>
   );
 };
-
-export default CosmicFlowTemplate;

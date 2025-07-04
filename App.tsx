@@ -1,13 +1,11 @@
-
-
-
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+import type { PlanData } from './types.ts';
 import HomePage from './pages/HomePage.tsx';
 import CreateInvoicePage from './pages/CreateInvoicePage.tsx';
 import AuthPage from './pages/AuthPage.tsx'; 
 import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
-import { PlanProvider } from './contexts/PlanContext.tsx';
+import { PlanProvider, usePlans } from './contexts/PlanContext.tsx';
 import { LocalizationProvider } from './contexts/LocalizationContext.tsx';
 import UserInvoicesPage from './pages/UserInvoicesPage.tsx'; 
 import DashboardPage from './pages/DashboardPage.tsx'; 
@@ -27,9 +25,18 @@ import MainLayout from './components/MainLayout.tsx';
 import AppLayout from './components/AppLayout.tsx';
 import CreateInvoiceLayout from './components/CreateInvoiceLayout.tsx';
 import ClientsPage from './pages/ClientsPage.tsx';
+import ProductsPage from './pages/ProductsPage.tsx';
+import TaxesPage from './pages/TaxesPage.tsx';
 import QuotesPage from './pages/QuotesPage.tsx';
 import RecurringPage from './pages/RecurringPage.tsx';
 import ReportsPage from './pages/ReportsPage.tsx';
+import ApiSettingsPage from './pages/ApiSettingsPage.tsx';
+import BlogListPage from './pages/BlogListPage.tsx';
+import BlogPostPage from './pages/BlogPostPage.tsx';
+import AdminBlogsView from './components/admin/AdminBlogsView.tsx';
+import TeamPage from './pages/TeamPage.tsx';
+
+const { HashRouter, Routes, Route, Navigate } = ReactRouterDOM;
 
 const PageSkeleton: React.FC = () => {
   return (
@@ -56,6 +63,22 @@ const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   }
 
   return children;
+};
+
+// New component to protect routes based on plan features
+const FeatureProtectedRoute: React.FC<{ children: JSX.Element; feature: keyof PlanData }> = ({ children, feature }) => {
+    const { currentUserPlan, loading: planLoading } = usePlans();
+    
+    if (planLoading) {
+        return <PageSkeleton />;
+    }
+
+    if (!currentUserPlan || !currentUserPlan[feature]) {
+        // Redirect to pricing page if the feature is not available on the current plan.
+        return <Navigate to="/pricing" replace />; 
+    }
+
+    return children;
 };
 
 // AdminProtectedRoute component
@@ -85,6 +108,8 @@ const App: React.FC = () => {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/blog" element={<BlogListPage />} />
+                  <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/about" element={<AboutUsPage />} />
                   <Route path="/contact" element={<ContactUsPage />} />
               </Route>
@@ -96,8 +121,20 @@ const App: React.FC = () => {
                  <Route path="quotes" element={<QuotesPage />} />
                  <Route path="recurring" element={<RecurringPage />} />
                  <Route path="clients" element={<ClientsPage />} />
-                 <Route path="reports" element={<ReportsPage />} />
+                 <Route path="products" element={<ProductsPage />} />
+                 <Route path="taxes" element={<TaxesPage />} />
+                 <Route path="team" element={<TeamPage />} />
+                 <Route path="reports" element={
+                    <FeatureProtectedRoute feature="advanced_reports">
+                      <ReportsPage />
+                    </FeatureProtectedRoute>
+                 } />
                  <Route path="settings" element={<SettingsPage />} />
+                 <Route path="api-settings" element={
+                    <FeatureProtectedRoute feature="api_access">
+                      <ApiSettingsPage />
+                    </FeatureProtectedRoute>
+                 } />
               </Route>
 
               {/* Invoice creation/editing routes (focused layout without sidebar) */}
@@ -119,6 +156,7 @@ const App: React.FC = () => {
                 <Route path="dashboard" element={<AdminDashboardView />} />
                 <Route path="users" element={<AdminUsersView />} />
                 <Route path="plans" element={<AdminPlansView />} />
+                <Route path="blogs" element={<AdminBlogsView />} />
                 <Route path="payments" element={<AdminPaymentsView />} />
                 <Route path="integrations" element={<AdminIntegrationsView />} />
                 <Route path="messages" element={<AdminMessagesView />} />

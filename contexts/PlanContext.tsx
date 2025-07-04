@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { PlanData } from '../types.ts';
 import { useAuth } from './AuthContext.tsx';
 import { supabase } from '../services/supabaseClient.ts';
@@ -23,7 +23,9 @@ interface PlanContextType {
 
   // For current user's plan state
   currentUserPlan: PlanData | null;
-  isLimitReached: boolean;
+  isInvoiceLimitReached: boolean;
+  isClientLimitReached: boolean;
+  isProductLimitReached: boolean;
   changePlan: (planId: string, paymentData?: any) => Promise<void>;
   processing: boolean;
 }
@@ -47,7 +49,9 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // User-specific plan state
   const [currentUserPlan, setCurrentUserPlan] = useState<PlanData | null>(null);
-  const [isLimitReached, setIsLimitReached] = useState(false);
+  const [invoiceCount, setInvoiceCount] = useState(0);
+  const [clientCount, setClientCount] = useState(0);
+  const [productCount, setProductCount] = useState(0);
   const [processing, setProcessing] = useState(false); // For plan change processing
 
   const loadPlans = useCallback(async () => {
@@ -79,34 +83,48 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user, plans]);
 
-  // Effect to check if the user has reached their invoice limit for the month
+  // Effect to check if the user has reached their limits
   useEffect(() => {
-    const checkLimit = async () => {
-      if (!user || !currentUserPlan || currentUserPlan.invoice_limit === null) {
-        setIsLimitReached(false);
-        return;
-      }
+    const checkLimits = async () => {
+      if (!user) return;
       
       const { startOfMonth, endOfMonth } = getMonthDateRange();
-      const { count, error: countError } = await supabase
-        .from('invoices')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', startOfMonth)
-        .lte('created_at', endOfMonth);
-
-      if (countError) {
-        setIsLimitReached(false); // Default to not-reached on error
-        return;
-      }
       
-      setIsLimitReached((count || 0) >= currentUserPlan.invoice_limit);
+      const [invoiceRes, clientRes, productRes] = await Promise.all([
+         supabase
+            .from('invoices')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', startOfMonth)
+            .lte('created_at', endOfMonth),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
+      ]);
+
+      setInvoiceCount(invoiceRes.count || 0);
+      setClientCount(clientRes.count || 0);
+      setProductCount(productRes.count || 0);
     };
 
-    if (!authLoading) {
-      checkLimit();
+    if (!authLoading && user) {
+      checkLimits();
     }
-  }, [user, currentUserPlan, authLoading]);
+  }, [user, authLoading]);
+
+  const isInvoiceLimitReached = useMemo(() => {
+    if (!currentUserPlan || currentUserPlan.invoice_limit === null) return false;
+    return invoiceCount >= currentUserPlan.invoice_limit;
+  }, [currentUserPlan, invoiceCount]);
+
+  const isClientLimitReached = useMemo(() => {
+    if (!currentUserPlan || currentUserPlan.client_limit === null) return false;
+    return clientCount >= currentUserPlan.client_limit;
+  }, [currentUserPlan, clientCount]);
+
+  const isProductLimitReached = useMemo(() => {
+    if (!currentUserPlan || currentUserPlan.product_limit === null) return false;
+    return productCount >= currentUserPlan.product_limit;
+  }, [currentUserPlan, productCount]);
 
   // Function for a user to change their own plan
   const changePlan = async (planId: string, paymentData?: any) => {
@@ -211,7 +229,9 @@ export const PlanProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     error,
     // User-specific values
     currentUserPlan,
-    isLimitReached,
+    isInvoiceLimitReached,
+    isClientLimitReached,
+    isProductLimitReached,
     changePlan,
     processing,
   };

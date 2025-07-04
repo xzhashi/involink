@@ -1,16 +1,17 @@
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
+  const isQuote = invoice.type === 'quote';
 
   return (
     <div className="p-10 font-[Inter,sans-serif] bg-white text-black print:p-0">
@@ -25,7 +26,7 @@ const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
           <p className="text-xs leading-relaxed text-gray-600">{invoice.sender.address.split(',').join('\n')}</p>
         </div>
         <div className="text-right">
-          <h1 className="text-5xl font-extrabold uppercase tracking-tighter">Invoice</h1>
+          <h1 className="text-5xl font-extrabold uppercase tracking-tighter">{isQuote ? 'Quote' : 'Invoice'}</h1>
         </div>
       </header>
 
@@ -37,7 +38,7 @@ const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
           <p className="text-gray-700">{invoice.recipient.address}</p>
         </div>
         <div className="col-span-1">
-          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Invoice Number</h3>
+          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">{isQuote ? 'Quote Number' : 'Invoice Number'}</h3>
           <p className="font-mono">{invoice.id}</p>
         </div>
         <div className="col-span-1">
@@ -73,7 +74,7 @@ const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
       {/* Total & Payment */}
       <section className="grid grid-cols-2 gap-8 items-start">
         <div className="text-sm">
-          {(upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
+          {!isQuote && (upiLink || qrCodeDataUrl || invoice.manualPaymentLink) && (
             <div>
               <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Details</h3>
               {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="UPI QR Code" className="border border-gray-300 p-1 mb-2" style={{width: '80px', height: '80px'}}/>}
@@ -89,12 +90,12 @@ const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
                 <td className="py-1 pr-4 text-gray-600">Subtotal</td>
                 <td className="py-1 font-mono">{invoice.currency} {subtotal.toFixed(2)}</td>
               </tr>
-              {invoice.taxRate > 0 && (
-                <tr>
-                  <td className="py-1 pr-4 text-gray-600">Tax ({invoice.taxRate}%)</td>
-                  <td className="py-1 font-mono">{invoice.currency} {taxAmount.toFixed(2)}</td>
+              {(invoice.taxes || []).map(tax => (
+                <tr key={tax.id}>
+                    <td className="py-1 pr-4 text-gray-600">{tax.name} ({tax.rate}%)</td>
+                    <td className="py-1 font-mono">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</td>
                 </tr>
-              )}
+              ))}
               {invoice.discount.value > 0 && (
                 <tr>
                   <td className="py-1 pr-4 text-gray-600">Discount</td>
@@ -102,7 +103,7 @@ const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
                 </tr>
               )}
               <tr className="font-bold text-lg border-t-2 border-black">
-                <td className="pt-3 pr-4">Total Due</td>
+                <td className="pt-3 pr-4">{isQuote ? 'Total Estimate' : 'Total Due'}</td>
                 <td className="pt-3 font-mono">{invoice.currency} {total.toFixed(2)}</td>
               </tr>
             </tbody>
@@ -123,5 +124,3 @@ const SwissModernTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink,
     </div>
   );
 };
-
-export default SwissModernTemplate;

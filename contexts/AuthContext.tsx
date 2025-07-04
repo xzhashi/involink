@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import type { Session, User as SupabaseAuthUser, AuthResponse, AuthError } from '@supabase/supabase-js';
+import type { Session, User as SupabaseAuthUser, AuthError, AuthResponse } from '@supabase/supabase-js';
 import { supabase } from '../services/supabaseClient.ts';
 import type { User } from '../types.ts'; // Import extended User type
 
@@ -12,6 +13,7 @@ interface AuthContextType {
   login: (email: string, password_string: string) => Promise<AuthResponse>;
   signup: (email: string, password_string: string) => Promise<AuthResponse>;
   logout: () => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,8 +87,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Session, user, role, and isAdmin are set to null/false by the onAuthStateChange listener
     setLoading(false);
   };
+  
+  const sendPasswordResetEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+    });
+    return { error };
+  };
 
-  const value = {
+  const value: AuthContextType = {
     session,
     user,
     loading,
@@ -95,6 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     signup,
     logout,
+    sendPasswordResetEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

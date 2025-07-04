@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import Button from './common/Button.tsx';
 import { SparklesIcon } from './icons/SparklesIcon.tsx';
 import { MenuIcon } from './icons/MenuIcon.tsx';
 import { XMarkIcon } from './icons/XMarkIcon.tsx';
 import { InstallIcon } from './icons/InstallIcon.tsx';
+
+const { Link, NavLink, useLocation } = ReactRouterDOM;
 
 const Navbar: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -54,6 +56,7 @@ const Navbar: React.FC = () => {
   const navLinks = [
       { to: "/", text: "Home" },
       { to: "/pricing", text: "Pricing" },
+      { to: "/blog", text: "Blog" },
       { to: "/about", text: "About" },
       { to: "/contact", text: "Contact" },
   ];

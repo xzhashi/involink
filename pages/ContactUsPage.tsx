@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import Button from '../components/common/Button.tsx';
 import Input from '../components/common/Input.tsx';
 import Textarea from '../components/common/Textarea.tsx';
 import { EnvelopeIcon } from '../components/icons/EnvelopeIcon.tsx';
 import { saveContactSubmission } from '../services/supabaseClient.ts';
+
+const { Link } = ReactRouterDOM;
 
 const ContactUsPage: React.FC = () => {
     const [name, setName] = useState('');

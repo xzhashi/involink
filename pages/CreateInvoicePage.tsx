@@ -1,9 +1,11 @@
+
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import InvoiceForm from '../features/invoice/InvoiceForm.tsx';
 import InvoicePreview from '../features/invoice/InvoicePreview.tsx';
 import TemplateSwitcher from '../features/invoice/TemplateSwitcher.tsx';
-import { InvoiceData, InvoiceItem, CompanyDetails, PlanData, CustomizationState, Attachment } from '../types.ts';
+import { InvoiceData, InvoiceItem, CompanyDetails, PlanData, CustomizationState, Attachment, Product, Tax, Client } from '../types.ts';
 import { INITIAL_INVOICE_STATE, AVAILABLE_TEMPLATES, DEFAULT_CURRENCY, INITIAL_CUSTOMIZATION_STATE } from '../constants.ts';
 import Button from '../components/common/Button.tsx';
 import { DownloadIcon } from '../components/icons/DownloadIcon.tsx';
@@ -12,7 +14,7 @@ import { calculateInvoiceTotal } from '../utils.ts';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx'; 
 import { useLocalization } from '../contexts/LocalizationContext.tsx';
-import { saveInvoiceToSupabase, fetchInvoiceByIdFromSupabase, uploadAttachment, deleteAttachment } from '../services/supabaseClient.ts';
+import { saveInvoiceToSupabase, fetchInvoiceByIdFromSupabase, uploadAttachment, deleteAttachment, fetchUserProducts, fetchUserTaxes, fetchUserClients } from '../services/supabaseClient.ts';
 import { XMarkIcon } from '../components/icons/XMarkIcon.tsx';
 import { PlusIcon } from '../components/icons/PlusIcon.tsx';
 import MobileActionsBar from '../components/MobileActionsBar.tsx';
@@ -20,6 +22,9 @@ import CustomizationPanel from '../features/invoice/CustomizationPanel.tsx';
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 import { CopyIcon } from '../components/icons/CopyIcon.tsx';
 import { EnvelopeIcon } from '../components/icons/EnvelopeIcon.tsx';
+import ProductSelectionModal from '../features/invoice/ProductSelectionModal.tsx';
+
+const { useLocation, useParams, useNavigate, Link } = ReactRouterDOM;
 
 const CreateInvoicePageSkeleton: React.FC = () => {
     return (
@@ -94,7 +99,7 @@ const LimitReachedModal: React.FC<{ plan: PlanData | null, onClose: () => void }
 
 const CreateInvoicePage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
-  const { isLimitReached, currentUserPlan } = usePlans();
+  const { isInvoiceLimitReached, currentUserPlan } = usePlans();
   const { currency: userCurrency, loading: currencyLoading } = useLocalization();
   const location = useLocation();
   const navigate = useNavigate();
@@ -104,20 +109,14 @@ const CreateInvoicePage: React.FC = () => {
   const getNewInvoiceState = useCallback(() => {
     const baseState = {...INITIAL_INVOICE_STATE, id: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`};
     
-    // Override with user's saved preferences first
-    if (user?.user_metadata) {
-      if (user.user_metadata.company_details) {
-        // Merge, so any missing details in saved profile don't break it
-        baseState.sender = { ...baseState.sender, ...user.user_metadata.company_details };
-      }
-      // Set currency based on priority: user preference > location > default
-      if (user.user_metadata.default_currency) {
-        baseState.currency = user.user_metadata.default_currency;
-      } else if (userCurrency && !currencyLoading) {
-        baseState.currency = userCurrency;
-      }
-    } else if (userCurrency && !currencyLoading) { // Fallback for users without metadata object
+    // Set currency from context, which is now the single source of truth
+    if (userCurrency && !currencyLoading) {
       baseState.currency = userCurrency;
+    }
+    
+    // Override with user's saved company details if available
+    if (user?.user_metadata?.company_details) {
+      baseState.sender = { ...baseState.sender, ...user.user_metadata.company_details };
     }
 
     return baseState;
@@ -132,7 +131,6 @@ const CreateInvoicePage: React.FC = () => {
   const [isNewInvoice, setIsNewInvoice] = useState(true);
   const [generatedUpiLink, setGeneratedUpiLink] = useState<string | undefined>(undefined);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | undefined>(undefined);
-  const [showWhatsAppOptionsModal, setShowWhatsAppOptionsModal] = useState(false);
   const [temporaryLogoUrl, setTemporaryLogoUrl] = useState<string | null>(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -140,6 +138,18 @@ const CreateInvoicePage: React.FC = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [taxes, setTaxes] = useState<Tax[]>([]);
+  const [showProductModal, setShowProductModal] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+        fetchUserProducts().then(setProducts).catch(console.error);
+        fetchUserClients().then(setClients).catch(console.error);
+        fetchUserTaxes().then(setTaxes).catch(console.error);
+    }
+  }, [user]);
 
   useEffect(() => {
     const beforePrintHandler = () => document.body.classList.add('printing');
@@ -175,7 +185,7 @@ const CreateInvoicePage: React.FC = () => {
         ? fullBaseInvoice.items.map((item: any) => ({
             id: typeof item.id === 'string' ? item.id : crypto.randomUUID(),
             description: typeof item.description === 'string' ? item.description : '',
-            quantity: typeof item.quantity === 'number' && !isNaN(item.quantity) ? item.quantity : 0,
+            quantity: typeof item.quantity === 'number' && !isNaN(item.quantity) ? item.quantity : 1,
             unitPrice: typeof item.unitPrice === 'number' && !isNaN(item.unitPrice) ? item.unitPrice : 0,
         }))
         : [{ id: crypto.randomUUID(), description: 'Sample Item or Service', quantity: 1, unitPrice: 100 }];
@@ -204,7 +214,7 @@ const CreateInvoicePage: React.FC = () => {
     fullBaseInvoice.id = typeof fullBaseInvoice.id === 'string' && fullBaseInvoice.id.startsWith("INV-") ? fullBaseInvoice.id : `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
     fullBaseInvoice.date = typeof fullBaseInvoice.date === 'string' ? fullBaseInvoice.date : baseState.date;
     fullBaseInvoice.dueDate = typeof fullBaseInvoice.dueDate === 'string' ? fullBaseInvoice.dueDate : baseState.dueDate;
-    fullBaseInvoice.taxRate = typeof fullBaseInvoice.taxRate === 'number' && !isNaN(fullBaseInvoice.taxRate) ? fullBaseInvoice.taxRate : 0;
+    fullBaseInvoice.taxes = Array.isArray(fullBaseInvoice.taxes) ? fullBaseInvoice.taxes : [];
     fullBaseInvoice.notes = typeof fullBaseInvoice.notes === 'string' ? fullBaseInvoice.notes : '';
     fullBaseInvoice.terms = typeof fullBaseInvoice.terms === 'string' ? fullBaseInvoice.terms : '';
     fullBaseInvoice.manualPaymentLink = typeof fullBaseInvoice.manualPaymentLink === 'string' ? fullBaseInvoice.manualPaymentLink : '';
@@ -221,7 +231,7 @@ const CreateInvoicePage: React.FC = () => {
   useEffect(() => {
     if (authLoading) return; 
 
-    if (isLimitReached && !invoiceDbId && !pageLoading) {
+    if (isInvoiceLimitReached && !invoiceDbId && !pageLoading) {
       setShowLimitModal(true);
     }
 
@@ -274,7 +284,7 @@ const CreateInvoicePage: React.FC = () => {
         setTemporaryLogoUrl(null);
 
       } catch (error) {
-        // Error handling can be done here if needed
+        console.error("Failed to load invoice:", error);
       } finally {
         if (isMounted) {
           setPageLoading(false);
@@ -287,7 +297,7 @@ const CreateInvoicePage: React.FC = () => {
     return () => {
         isMounted = false;
     };
-  }, [user, authLoading, invoiceDbId, sanitizeInvoiceData, navigate, isLimitReached, getNewInvoiceState]);
+  }, [user, authLoading, invoiceDbId, sanitizeInvoiceData, navigate, isInvoiceLimitReached, getNewInvoiceState]);
   
   const handleSave = useCallback(async () => {
     setSaveStatus('saving');
@@ -336,7 +346,7 @@ const CreateInvoicePage: React.FC = () => {
         return;
     }
     
-    if (isLimitReached && !invoice.db_id) {
+    if (isInvoiceLimitReached && !invoice.db_id) {
         setSaveStatus('error');
         return;
     }
@@ -346,7 +356,7 @@ const CreateInvoicePage: React.FC = () => {
         return () => clearTimeout(debounceTimer);
     }
 
-  }, [invoice, pageLoading, authLoading, invoiceDbId, isLimitReached, handleSave]); 
+  }, [invoice, pageLoading, authLoading, invoiceDbId, isInvoiceLimitReached, handleSave]); 
   
   const handleManualSave = () => {
     handleSave();
@@ -411,6 +421,42 @@ const CreateInvoicePage: React.FC = () => {
       },
     }));
   }, []);
+
+    const handleClientSelect = (clientId: string) => {
+    if (!clientId) {
+      setInvoice(prev => ({
+        ...prev,
+        recipient: INITIAL_INVOICE_STATE.recipient,
+        client_id: null,
+      }));
+      return;
+    }
+    const selectedClient = clients.find(c => c.id === clientId);
+    if (selectedClient) {
+      setInvoice(prev => ({
+        ...prev,
+        recipient: {
+          name: selectedClient.name,
+          address: selectedClient.address || '',
+          email: selectedClient.email || '',
+          phone: selectedClient.phone || '',
+          logoUrl: prev.recipient.logoUrl,
+        },
+        client_id: selectedClient.id,
+      }));
+    }
+  };
+
+  const handleProductSelect = (product: Product) => {
+    const newItem: InvoiceItem = {
+      id: crypto.randomUUID(),
+      description: `${product.name}${product.description ? ` - ${product.description}` : ''}`,
+      quantity: 1,
+      unitPrice: product.unit_price,
+    };
+    setInvoice(prev => ({ ...prev, items: [...prev.items, newItem] }));
+    setShowProductModal(false);
+  };
 
   const handleDownload = () => {
     window.print();
@@ -505,37 +551,26 @@ const CreateInvoicePage: React.FC = () => {
   
   const handleShareOnWhatsApp = async () => {
     const shareUrl = await prepareShareableLink();
-     if (!shareUrl) return;
-
-    setActionStatus('idle');
-    const recipientPhone = invoice.recipient.phone;
-    if (!recipientPhone || recipientPhone.trim() === '') {
-      setShowWhatsAppOptionsModal(true); 
-      return;
-    }
-    setShowWhatsAppOptionsModal(true); 
-  };
-
-  const shareWhatsAppWithMessage = (messageType: 'link' | 'pdf_guide') => {
-    const shareUrl = `${window.location.origin}/#/view/invoice/${invoice.db_id}`;
     if (!shareUrl) return;
 
-    const recipientPhone = invoice.recipient.phone?.replace(/[^\d+]/g, '') || '';
-    
-    let message = getInvoiceSummaryForShare(shareUrl);
+    const sanitizedPhone = invoice.recipient.phone?.replace(/\D/g, '') || '';
+    const message = getInvoiceSummaryForShare(shareUrl);
+    let whatsappUrl: string;
 
-    if (messageType === 'pdf_guide') {
-      message += `\n\nTo view/share the PDF: open the link above, use the 'Download/Print PDF' button to save it, then attach the PDF file in WhatsApp.`;
+    if (sanitizedPhone) {
+        whatsappUrl = `https://wa.me/${sanitizedPhone}?text=${encodeURIComponent(message)}`;
+    } else {
+        alert("Recipient phone number is not set. The WhatsApp message will be pre-filled, but you will need to select a contact manually.");
+        whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     }
-
-    const whatsappUrl = `https://wa.me/${recipientPhone}?text=${encodeURIComponent(message)}`;
+    
     window.open(whatsappUrl, '_blank');
-    setShowWhatsAppOptionsModal(false);
+    setActionStatus('idle');
   };
 
 
   const handleCreateNew = () => {
-    if (isLimitReached) {
+    if (isInvoiceLimitReached) {
         setShowLimitModal(true);
         return;
     }
@@ -605,12 +640,21 @@ const CreateInvoicePage: React.FC = () => {
     return <CreateInvoicePageSkeleton />;
   }
 
-  const isSaveDisabled = isLimitReached && !invoice.db_id;
+  const isSaveDisabled = isInvoiceLimitReached && !invoice.db_id;
   const isActionProcessing = actionStatus === 'processing';
 
   return (
     <>
       {showLimitModal && <LimitReachedModal plan={currentUserPlan} onClose={() => setShowLimitModal(false)}/>}
+      
+      {showProductModal && (
+        <ProductSelectionModal 
+            isOpen={showProductModal}
+            onClose={() => setShowProductModal(false)}
+            products={products}
+            onSelectProduct={handleProductSelect}
+        />
+      )}
 
       <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 pb-20 lg:pb-0">
         <div className="lg:w-2/5 xl:w-1/3 no-print lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto thin-scrollbar p-1">
@@ -624,6 +668,8 @@ const CreateInvoicePage: React.FC = () => {
               <InvoiceForm
                 invoice={invoice}
                 invoiceTotal={invoiceTotal}
+                clients={clients}
+                availableTaxes={taxes}
                 onInvoiceChange={handleInvoiceChange}
                 onCompanyDetailsChange={handleCompanyDetailsChange}
                 onItemChange={handleItemChange}
@@ -631,10 +677,12 @@ const CreateInvoicePage: React.FC = () => {
                 onRemoveItem={removeItem}
                 onDiscountChange={handleDiscountChange}
                 onUpiDetailsGenerated={handleUpiDetailsGenerated}
+                onClientSelect={handleClientSelect}
                 temporaryLogoUrl={temporaryLogoUrl}
                 onTemporaryLogoChange={handleTemporaryLogoChange}
                 onOpenTemplateModal={() => setShowTemplateModal(true)}
                 onOpenCustomizationModal={() => setShowCustomizationPanel(true)}
+                onOpenProductModal={() => setShowProductModal(true)}
                 onFileUpload={handleFileUpload}
                 onFileDelete={handleFileDelete}
                 isUploading={isUploading}
@@ -656,14 +704,11 @@ const CreateInvoicePage: React.FC = () => {
                       <Button onClick={handleDownload} variant="secondary" leftIcon={<DownloadIcon className="w-5 h-5"/>} title="Open browser print dialog to print or save as PDF">
                         Print / PDF
                       </Button>
-                      <Button onClick={handleCopyLink} variant="secondary" leftIcon={<CopyIcon className="w-5 h-5"/>} disabled={isActionProcessing} title="Copy public link to clipboard">
-                        {isActionProcessing ? '...' : actionStatus === 'copied' ? 'Copied!' : 'Copy Link'}
+                      <Button onClick={() => setShowShareModal(true)} variant="secondary" leftIcon={<CopyIcon className="w-5 h-5"/>} disabled={isActionProcessing} title="Get a shareable link">
+                        {isActionProcessing ? '...' : actionStatus === 'copied' ? 'Copied!' : 'Share'}
                       </Button>
                   </div>
                    <div className="grid grid-cols-1 gap-2">
-                        <Button onClick={handleSendByEmail} variant="primary" disabled={isActionProcessing} leftIcon={<EnvelopeIcon className="w-5 h-5"/>} title="Send invoice link via email">
-                            {isActionProcessing ? 'Preparing...' : 'Send by Email'}
-                        </Button>
                         <Button onClick={handleShareOnWhatsApp} variant="primary" className="!bg-gradient-to-r !from-green-500 !to-emerald-600 hover:!from-green-600 hover:!to-emerald-700 !focus:ring-green-500" leftIcon={<WhatsAppIcon className="w-5 h-5" />} disabled={isActionProcessing} title="Share invoice via WhatsApp">
                             {isActionProcessing ? 'Preparing...' : 'Share on WhatsApp'}
                         </Button>
@@ -676,10 +721,10 @@ const CreateInvoicePage: React.FC = () => {
                       variant="ghost" 
                       size="md" 
                       className="w-full mt-3 border border-primary text-primary-dark hover:bg-secondary"
-                      title={isLimitReached ? "Plan limit reached" : "Create a new blank invoice"}
-                      disabled={isLimitReached}
+                      title={isInvoiceLimitReached ? "Plan limit reached" : "Create a new blank invoice"}
+                      disabled={isInvoiceLimitReached}
                     >
-                      {isLimitReached ? "Plan Limit Reached" : "Create New Invoice"}
+                      {isInvoiceLimitReached ? "Plan Limit Reached" : "Create New Invoice"}
                     </Button>
               </div>
           </div>

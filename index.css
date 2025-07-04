@@ -43,7 +43,7 @@
   #invoice-preview-content {
     margin: 0 !important;
     padding: 0 !important;
-    border: none !importa
+    border: none !important;
   }
 }
 
@@ -77,4 +77,20 @@
 
 .animate-fade-in-out {
   animation: fadeInOut 2s ease-in-out forwards;
+}
+
+/* Custom Thin Scrollbar */
+.thin-scrollbar::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 */
+  border-radius: 20px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 */
 }

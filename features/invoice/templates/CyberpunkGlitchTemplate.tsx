@@ -2,16 +2,16 @@
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const CyberpunkGlitchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const CyberpunkGlitchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   const font = "'VT323', monospace"; // Pixel/monospace font
@@ -80,7 +80,9 @@ const CyberpunkGlitchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
         </div>
         <div className="w-full md:w-2/5 text-right text-sm space-y-1">
           <p>SUBTOTAL: <span className="font-bold">{invoice.currency} {subtotal.toFixed(2)}</span></p>
-          {invoice.taxRate > 0 && <p>SYSTEM_TAX ({invoice.taxRate}%): <span className="font-bold">{invoice.currency} {taxAmount.toFixed(2)}</span></p>}
+          {(invoice.taxes || []).map(tax => (
+             <p key={tax.id}>{tax.name.toUpperCase()} ({tax.rate}%): <span className="font-bold">{invoice.currency} {((subtotal * tax.rate)/100).toFixed(2)}</span></p>
+          ))}
           {invoice.discount.value > 0 && <p className={neonPink}>DISCOUNT: <span className="font-bold">- {invoice.currency} {discountAmount.toFixed(2)}</span></p>}
           <p className="text-xl font-bold border-t-2 border-pink-500 pt-1 mt-1">TOTAL_DUE: <span className={neonPink} style={glitchStyle}>{invoice.currency} {total.toFixed(2)}</span></p>
         </div>
@@ -99,5 +101,3 @@ const CyberpunkGlitchTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiL
     </div>
   );
 };
-
-export default CyberpunkGlitchTemplate;

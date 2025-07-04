@@ -1,8 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import Button from '../common/Button.tsx';
 import { PowerIcon } from '../icons/PowerIcon.tsx';
+
+const { Link } = ReactRouterDOM;
 
 const AdminNavbar: React.FC = () => {
     const { user, logout } = useAuth();

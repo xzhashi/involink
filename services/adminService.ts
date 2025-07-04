@@ -1,5 +1,5 @@
 
-import { AdminDashboardStats, AdminUser, PlanData, Payment, ContactSubmission } from '../types.ts';
+import { AdminDashboardStats, AdminUser, PlanData, Payment, ContactSubmission, Blog } from '../types.ts';
 import { supabase } from './supabaseClient.ts'; 
 
 // --- Helper to get start and end of current month for DB queries ---
@@ -111,24 +111,56 @@ export const deleteUserAdmin = async (userId: string): Promise<{ success: boolea
 
 // --- Plan Management ---
 export const fetchAllPlansAdmin = async (): Promise<PlanData[]> => {
-    const { data, error } = await supabase.from('plans_table').select('*');
-    if (error) throw new Error(error.message);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      // For non-admins, try a direct fetch. This may fail if RLS is not permissive.
+      // This supports the user-facing part of PlanContext.
+      const { data, error } = await supabase.from('plans_table').select('*');
+      if (error) throw new Error(error.message);
+      return data || [];
+    }
+    // For admins, use the secure Edge Function
+    const { data, error } = await supabase.functions.invoke('admin-list-plans', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) throw new Error(handleInvokeError(error, "list plans"));
     return data || [];
 };
 
 export const createPlanAdmin = async (plan: Omit<PlanData, 'created_at' | 'updated_at'>): Promise<{ plan: PlanData | null, error: string | null }> => {
-    const { data, error } = await supabase.from('plans_table').insert(plan).select().single();
-    return { plan: data, error: error?.message || null };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { plan: null, error: "Admin not authenticated." };
+
+    const { data, error } = await supabase.functions.invoke('admin-create-plan', {
+        body: { plan },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) return { plan: null, error: handleInvokeError(error, 'create plan') };
+    return { plan: data.plan, error: null };
 };
 
 export const updatePlanAdmin = async (plan: PlanData): Promise<{ plan: PlanData | null, error: string | null }> => {
-    const { data, error } = await supabase.from('plans_table').update(plan).eq('id', plan.id).select().single();
-    return { plan: data, error: error?.message || null };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { plan: null, error: "Admin not authenticated." };
+
+    const { data, error } = await supabase.functions.invoke('admin-update-plan', {
+        body: { plan },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) return { plan: null, error: handleInvokeError(error, 'update plan') };
+    return { plan: data.plan, error: null };
 };
 
 export const deletePlanAdmin = async (planId: string): Promise<{ success: boolean, error: string | null }> => {
-    const { error } = await supabase.from('plans_table').delete().eq('id', planId);
-    return { success: !error, error: error?.message || null };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { success: false, error: "Admin not authenticated." };
+    
+    const { data, error } = await supabase.functions.invoke('admin-delete-plan', {
+        body: { planId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) return { success: false, error: handleInvokeError(error, 'delete plan') };
+    return { success: data.success, error: null };
 };
 
 // --- Payment & Integration Management ---
@@ -141,8 +173,8 @@ export const fetchPaymentsAdmin = async (): Promise<Payment[]> => {
 export const fetchRazorpaySettings = async (): Promise<{ keyId: string | null; isSecretSet: boolean; error: string | null; }> => {
     const { data, error } = await supabase.from('app_config').select('key, value').in('key', ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET']);
     if (error) return { keyId: null, isSecretSet: false, error: error.message };
-    const keyId = data.find(c => c.key === 'RAZORPAY_KEY_ID')?.value || null;
-    const isSecretSet = !!data.find(c => c.key === 'RAZORPAY_KEY_SECRET')?.value;
+    const keyId = data?.find(c => c.key === 'RAZORPAY_KEY_ID')?.value || null;
+    const isSecretSet = !!data?.find(c => c.key === 'RAZORPAY_KEY_SECRET')?.value;
     return { keyId, isSecretSet, error: null };
 };
 
@@ -161,7 +193,7 @@ export const updateRazorpaySettings = async (keyId: string, keySecret: string): 
 export const fetchContactSubmissionsAdmin = async (): Promise<ContactSubmission[]> => {
     const { data, error } = await supabase.from('contact_submissions').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
 };
 
 export const updateContactSubmissionAdmin = async (id: string, updates: Partial<ContactSubmission>): Promise<{ submission: ContactSubmission | null, error: string | null }> => {
@@ -172,4 +204,56 @@ export const updateContactSubmissionAdmin = async (id: string, updates: Partial<
 export const deleteContactSubmissionAdmin = async (id: string): Promise<{ success: boolean, error: string | null }> => {
     const { error } = await supabase.from('contact_submissions').delete().eq('id', id);
     return { success: !error, error: error?.message || null };
+};
+
+// --- Blog Management (Admin) ---
+export const fetchAllBlogsAdmin = async (): Promise<Blog[]> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        console.error("Attempted to fetch admin blogs without a session.");
+        return [];
+    }
+    
+    // Admins must use the secure Edge Function to bypass RLS for fetching user emails.
+    const { data, error } = await supabase.functions.invoke('admin-list-blogs', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (error) {
+        console.error("Error invoking admin-list-blogs function:", error);
+        throw handleInvokeError(error, "list blog posts");
+    }
+    
+    return data || [];
+};
+
+export const saveBlogAdmin = async (blog: Partial<Blog>): Promise<{ blog: Blog | null, error: any }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { blog: null, error: { message: "Not authenticated" } };
+
+    const payload = { ...blog };
+    if (!payload.author_id) {
+        payload.author_id = user.id;
+    }
+    // Set published_at timestamp if status is changing to published and it's not already set
+    if (payload.status === 'published' && !payload.published_at) {
+        payload.published_at = new Date().toISOString();
+    }
+    
+    // Omit joined fields before upsert
+    delete (payload as any).author_email; 
+    delete (payload as any).author;
+    
+    const { data, error } = await supabase
+        .from('blogs')
+        .upsert([payload])
+        .select()
+        .single();
+
+    return { blog: data, error };
+};
+
+export const deleteBlogAdmin = async (blogId: string): Promise<{ error: any }> => {
+    const { error } = await supabase.from('blogs').delete().eq('id', blogId);
+    return { error };
 };

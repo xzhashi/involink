@@ -1,18 +1,17 @@
 
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts'; 
 
-const CorporateTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const CorporateTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   return (
@@ -124,12 +123,12 @@ const CorporateTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, q
             <span className="text-gray-600">Subtotal:</span>
             <span className="text-gray-800 font-medium">{invoice.currency} {subtotal.toFixed(2)}</span>
           </div>
-          {invoice.taxRate > 0 && (
-            <div className="flex justify-between py-1">
-              <span className="text-gray-600">Tax ({invoice.taxRate}%):</span>
-              <span className="text-gray-800 font-medium">{invoice.currency} {taxAmount.toFixed(2)}</span>
+          {(invoice.taxes || []).map(tax => (
+            <div key={tax.id} className="flex justify-between py-1">
+                <span className="text-gray-600">{tax.name} ({tax.rate}%):</span>
+                <span className="text-gray-800 font-medium">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
             </div>
-          )}
+          ))}
           {invoice.discount.value > 0 && (
              <div className="flex justify-between py-1">
               <span className="text-gray-600">Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span>
@@ -187,5 +186,3 @@ const CorporateTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, q
     </div>
   );
 };
-
-export default CorporateTemplate;

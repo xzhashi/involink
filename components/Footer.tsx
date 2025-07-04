@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { SparklesIcon } from './icons/SparklesIcon.tsx';
 import { TwitterIcon } from './icons/TwitterIcon.tsx'; 
 import { GithubIcon } from './icons/GithubIcon.tsx';
 import { LinkedinIcon } from './icons/LinkedinIcon.tsx';
+
+const { Link } = ReactRouterDOM;
 
 const Footer: React.FC = () => {
   return (

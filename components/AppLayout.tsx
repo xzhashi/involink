@@ -1,8 +1,11 @@
 
+
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import Sidebar from './Sidebar.tsx';
 import BottomNavbar from './BottomNavbar.tsx';
+
+const { Outlet, useLocation } = ReactRouterDOM;
 
 const AppLayout: React.FC = () => {
     const location = useLocation();

@@ -1,12 +1,16 @@
 
+
+
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { supabase } from '../../services/supabaseClient.ts';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { InvoiceData } from '../../types.ts';
 import { calculateInvoiceTotal } from '../../utils.ts';
 import StatusBadge from '../common/StatusBadge.tsx';
 import { DEFAULT_CURRENCY } from '../../constants.ts';
+
+const { Link } = ReactRouterDOM;
 
 const fromSupabaseInvoiceFormatForList = (row: any): InvoiceData => {
   const jsonData = row.invoice_data_json || {};
@@ -19,7 +23,7 @@ const fromSupabaseInvoiceFormatForList = (row: any): InvoiceData => {
     sender: jsonData.sender || { name: '', address: '' },
     recipient: jsonData.recipient || { name: '', address: '' },
     items: Array.isArray(jsonData.items) ? jsonData.items : [],
-    taxRate: typeof jsonData.taxRate === 'number' ? jsonData.taxRate : 0,
+    taxes: Array.isArray(jsonData.taxes) ? jsonData.taxes : [],
     discount: jsonData.discount || { type: 'percentage', value: 0 },
     currency: jsonData.currency || 'USD',
     selectedTemplateId: jsonData.selectedTemplateId || 'modern',

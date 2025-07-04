@@ -1,29 +1,99 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+
+import React, { useState, useMemo } from 'react';
+import * as ReactRouterDOM from 'react-router-dom';
 import Button from '../components/common/Button.tsx';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon.tsx'; 
+import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
+import { UserGroupIcon } from '../components/icons/UserGroupIcon.tsx';
+import { StarIcon } from '../components/icons/StarIcon.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx';
 import { useAuth } from '../contexts/AuthContext.tsx';
+import { useLocalization } from '../contexts/LocalizationContext.tsx';
 import { createOrder } from '../services/razorpayService.ts';
+import { PlanData } from '../types.ts';
+
+const { Link, useNavigate } = ReactRouterDOM;
 
 declare const Razorpay: any;
 
-const PlanFeature: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <li className="flex items-center">
-    <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+const PlanFeature: React.FC<{ children: React.ReactNode, isPrimary: boolean }> = ({ children, isPrimary }) => (
+  <li className="flex items-start">
+    <CheckCircleIcon className={`h-5 w-5 mr-3 mt-0.5 flex-shrink-0 ${isPrimary ? 'text-purple-400' : 'text-green-500'}`} />
     <span>{children}</span>
   </li>
 );
+
+const PlanCard: React.FC<{
+  plan: PlanData;
+  isCurrent: boolean;
+  isProcessing: boolean;
+  onChoose: () => void;
+  currencySymbol: string;
+  billingCycle: 'monthly' | 'annually';
+}> = ({ plan, isCurrent, isProcessing, onChoose, currencySymbol, billingCycle }) => {
+    const isPrimary = plan.variant === 'primary';
+    const PlanIcon = plan.name.toLowerCase().includes('pro') ? StarIcon 
+                   : plan.name.toLowerCase().includes('starter') ? UserGroupIcon 
+                   : SparklesIcon;
+
+    return (
+        <div 
+            className={`
+                p-8 rounded-2xl flex flex-col transition-all duration-300 transform 
+                ${isPrimary ? 'bg-gradient-to-br from-slate-800 to-black text-white shadow-2xl shadow-purple-500/20' : 'bg-white text-slate-800 border border-slate-100 shadow-xl'}
+                ${isCurrent ? 'ring-4 ring-offset-2 ring-green-400' : 'hover:-translate-y-2'}
+            `}
+        >
+            <div className="flex items-center gap-4 mb-6">
+                <div className={`
+                    w-14 h-14 rounded-full flex items-center justify-center
+                    ${isPrimary ? 'bg-purple-500/20' : 'bg-purple-100'}
+                `}>
+                    <PlanIcon className={`w-7 h-7 ${isPrimary ? 'text-purple-300' : 'text-purple-600'}`} />
+                </div>
+                <h2 className={`text-2xl font-bold ${isPrimary ? 'text-white' : 'text-slate-800'}`}>
+                    {plan.name}
+                </h2>
+            </div>
+            
+            <div className="flex items-baseline mb-1">
+                <p className={`text-4xl md:text-5xl font-extrabold ${isPrimary ? 'text-white' : 'text-slate-900'}`}>
+                    {currencySymbol}{plan.price}
+                </p>
+                {plan.price !== '0' && <span className={`ml-2 text-lg font-medium ${isPrimary ? 'text-slate-400' : 'text-slate-500'}`}>{plan.price_suffix}</span>}
+            </div>
+            
+            <p className={`text-xs mb-8 ${isPrimary ? 'text-slate-400' : 'text-slate-500'}`}>
+                {plan.id === 'free_tier' ? 'Perfect for starting out' : billingCycle === 'monthly' ? 'Billed monthly' : 'Billed annually'}
+            </p>
+            
+            <ul className={`space-y-3 mb-8 flex-grow text-sm ${isPrimary ? 'text-slate-300' : 'text-slate-600'}`}>
+                {plan.features.map((feature, index) => <PlanFeature key={`${plan.id}-feature-${index}`} isPrimary={isPrimary}>{feature}</PlanFeature>)}
+            </ul>
+
+            <Button 
+                variant={isCurrent ? 'secondary' : (isPrimary ? 'primary' : 'secondary')} 
+                className={`w-full mt-auto ${isPrimary && !isCurrent ? '!py-3' : ''} ${isCurrent ? '!bg-green-100 !text-green-800 cursor-not-allowed hover:!bg-green-100' : ''}`}
+                disabled={isCurrent || isProcessing}
+                onClick={onChoose}
+            >
+                {isProcessing ? 'Processing...' : (isCurrent ? 'Current Plan' : plan.cta_text)}
+            </Button>
+        </div>
+    );
+};
 
 const PricingPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { plans, loading: plansLoading, currentUserPlan, changePlan: changePlanContext, processing: planProcessing } = usePlans();
+  const { currency: userCurrency, countryCode, loading: localizationLoading } = useLocalization();
+
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
 
-  const handleChoosePlan = async (planId: string, amount: string, currency: string) => {
+  const handleChoosePlan = async (planId: string, amount: string) => {
     if (!user) {
         navigate('/auth?mode=login&from=/pricing'); // Redirect to login if not authenticated
         return;
@@ -39,6 +109,16 @@ const PricingPage: React.FC = () => {
 
     setProcessingPlanId(planId);
     setPaymentError(null);
+    
+    const isIndianPlan = planId.endsWith('_inr');
+    const currency = isIndianPlan ? 'INR' : 'USD'; 
+
+    if (typeof Razorpay === 'undefined') {
+        setPaymentError("Payment gateway is not ready. Please wait a moment and try again.");
+        setProcessingPlanId(null);
+        return;
+    }
+
 
     try {
         const orderData = await createOrder(planId, parseFloat(amount), currency);
@@ -55,16 +135,15 @@ const PricingPage: React.FC = () => {
             description: `Payment for ${orderData.notes.plan_name || 'Selected Plan'}`,
             order_id: orderData.id,
             handler: async function (response: any) {
-                // Verification is now handled in the PlanContext after a successful payment
                 await changePlanContext(planId, {
                     razorpay_order_id: response.razorpay_order_id,
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_signature: response.razorpay_signature,
                 });
-                navigate('/dashboard'); // Redirect to a success page or dashboard
+                navigate('/dashboard'); 
             },
             prefill: {
-                name: user.email, // Or a proper name field if you have one
+                name: user.email, 
                 email: user.email,
             },
             notes: {
@@ -76,8 +155,6 @@ const PricingPage: React.FC = () => {
             },
             modal: {
                 ondismiss: function() {
-                    // This is called when the user closes the payment modal
-                    // We can reset the processing state here.
                     setProcessingPlanId(null);
                 }
             }
@@ -97,7 +174,26 @@ const PricingPage: React.FC = () => {
     }
   };
   
-  if (plansLoading) {
+  const displayedPlans = useMemo(() => {
+    if (plansLoading || localizationLoading) return [];
+    
+    const isIndianUser = countryCode === 'IN';
+    
+    return plans.filter(p => {
+        const isFree = p.id === 'free_tier';
+        if (isFree) return true;
+
+        const isCorrectCycle = p.billing_cycle === billingCycle;
+        if (!isCorrectCycle) return false;
+
+        const isIndianPlan = p.id.endsWith('_inr');
+        
+        return isIndianUser ? isIndianPlan : !isIndianPlan;
+    });
+  }, [plans, billingCycle, countryCode, plansLoading, localizationLoading]);
+
+
+  if (plansLoading || localizationLoading) {
     return (
         <div className="container mx-auto px-4 py-12 animate-pulse">
             <div className="text-center mb-16">
@@ -106,7 +202,7 @@ const PricingPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
                 {[...Array(3)].map((_, i) => (
-                    <div key={i} className="bg-white p-8 rounded-xl shadow-2xl space-y-6">
+                    <div key={i} className="bg-white p-8 rounded-2xl shadow-2xl space-y-6">
                         <div className="h-7 bg-slate-200 rounded w-1/3"></div>
                         <div className="h-10 bg-slate-200 rounded w-1/2"></div>
                         <div className="space-y-3 pt-4">
@@ -122,8 +218,6 @@ const PricingPage: React.FC = () => {
     );
   }
 
-  const displayedPlans = plans.filter(p => p.id === 'free_tier' || p.billing_cycle === billingCycle);
-
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
@@ -134,7 +228,12 @@ const PricingPage: React.FC = () => {
           Choose the plan that best suits your invoicing needs. Paid plans remove branding and unlock unlimited invoices.
         </p>
          {paymentError && <p className="text-sm text-red-500 bg-red-100 p-3 rounded-md mt-4 max-w-xl mx-auto whitespace-pre-wrap">{paymentError}</p>}
-         <p className="text-sm text-accent-DEFAULT mt-2">(Payment processing via Razorpay is now live for INR transactions.)</p>
+         <p className="text-sm text-accent-DEFAULT mt-2">
+            {userCurrency === 'INR' 
+                ? '(All prices are in INR. Payments are processed securely via Razorpay.)'
+                : '(All prices are in USD. Payments are processed securely via Razorpay.)'
+            }
+         </p>
       </div>
 
       <div className="flex justify-center mb-12">
@@ -150,8 +249,8 @@ const PricingPage: React.FC = () => {
             className={`relative px-6 py-2 rounded-full text-sm font-semibold transition-colors ${billingCycle === 'annually' ? 'bg-white text-primary-dark shadow' : 'text-neutral-600 hover:bg-slate-200/50'}`}
           >
             Annually
-            <span className="absolute -top-2 -right-2 bg-secondary-DEFAULT text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Save 20%
+            <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              Save 16%
             </span>
           </button>
         </div>
@@ -161,39 +260,18 @@ const PricingPage: React.FC = () => {
         {displayedPlans.map(plan => {
           const isCurrent = currentUserPlan?.id === plan.id;
           const isProcessingThisPlan = processingPlanId === plan.id || (planProcessing && currentUserPlan?.id === plan.id);
-          const currency = 'INR';
+          const currencySymbol = userCurrency === 'INR' ? '₹' : '$';
 
           return (
-            <div 
-              key={plan.id} 
-              className={`bg-white p-8 rounded-xl shadow-2xl flex flex-col border-2 transition-all duration-300 transform hover:scale-105
-                          ${plan.variant === 'primary' ? 'border-primary-DEFAULT' : 'border-neutral-light/50'}
-                          ${isCurrent ? 'ring-4 ring-offset-2 ring-secondary-DEFAULT' : ''}`}
-            >
-              <h2 className={`text-2xl font-semibold mb-2 ${plan.variant === 'primary' ? 'text-primary-DEFAULT' : 'text-neutral-darkest'}`}>
-                {plan.name}
-              </h2>
-              <p className="text-4xl font-bold mb-1 text-neutral-darkest">
-                ${plan.price}
-                {plan.price !== '0' && <span className="text-lg font-normal text-neutral-DEFAULT">{plan.price_suffix}</span>}
-              </p>
-              <p className="text-xs text-neutral-DEFAULT mb-6">
-                {plan.id === 'free_tier' ? 'Perfect for starting out' : billingCycle === 'monthly' ? 'For growing businesses' : 'Billed annually'}
-              </p>
-              
-              <ul className="text-left space-y-3 mb-8 text-neutral-dark text-sm flex-grow">
-                {plan.features.map((feature, index) => <PlanFeature key={`${plan.id}-feature-${index}`}>{feature}</PlanFeature>)}
-              </ul>
-
-              <Button 
-                variant={isCurrent ? 'secondary' : (plan.variant || 'secondary')} 
-                className={`w-full mt-auto ${plan.variant === 'primary' && !isCurrent ? '!py-3' : ''}`}
-                disabled={isCurrent || planProcessing || isProcessingThisPlan}
-                onClick={() => handleChoosePlan(plan.id, plan.price, currency)}
-              >
-                {isProcessingThisPlan ? 'Processing...' : (isCurrent ? 'Current Plan' : plan.cta_text)}
-              </Button>
-            </div>
+             <PlanCard 
+              key={plan.id}
+              plan={plan}
+              isCurrent={isCurrent}
+              isProcessing={isProcessingThisPlan}
+              onChoose={() => handleChoosePlan(plan.id, plan.price)}
+              currencySymbol={currencySymbol}
+              billingCycle={billingCycle}
+            />
           );
         })}
       </div>

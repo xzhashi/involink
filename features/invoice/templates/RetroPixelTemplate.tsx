@@ -1,17 +1,16 @@
-
 import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 
-const RetroPixelTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
+export const RetroPixelTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan }) => {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage'
       ? (subtotal * invoice.discount.value) / 100
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
   const isQuote = invoice.type === 'quote';
 
   const pixelFont = "'Press Start 2P', monospace";
@@ -83,7 +82,9 @@ const RetroPixelTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
         </div>
         <div className="w-full md:w-2/5 lg:w-1/3 space-y-0.5 text-xs ml-auto bg-slate-700 p-3 border-2 border-red-400 print:bg-slate-50 print:border-red-500">
           <div className="flex justify-between"><span className="text-lime-400 print:text-slate-600">SUBTOTAL:</span><span className="text-lime-200 font-bold print:text-black">{invoice.currency} {subtotal.toFixed(2)}</span></div>
-          {invoice.taxRate > 0 && (<div className="flex justify-between"><span className="text-lime-400 print:text-slate-600">TAX ({invoice.taxRate}%):</span><span className="text-lime-200 font-bold print:text-black">{invoice.currency} {taxAmount.toFixed(2)}</span></div>)}
+          {(invoice.taxes || []).map(tax => (
+            <div key={tax.id} className="flex justify-between"><span className="text-lime-400 print:text-slate-600">TAX ({tax.rate}%):</span><span className="text-lime-200 font-bold print:text-black">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span></div>
+          ))}
           {invoice.discount.value > 0 && (<div className="flex justify-between"><span className="text-lime-400 print:text-slate-600">DISCOUNT ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : `${invoice.currency} ${invoice.discount.value.toFixed(2)}`}):</span><span className="text-yellow-300 font-bold print:text-yellow-600">- {invoice.currency} {discountAmount.toFixed(2)}</span></div>)}
           <div className="flex justify-between pt-1 border-t-2 border-dashed border-lime-400 mt-1 print:border-lime-500"><span className="font-bold text-lg text-red-400 print:text-red-600">TOTAL:</span><span className="font-bold text-lg text-red-400 print:text-red-600">{invoice.currency} {total.toFixed(2)}</span></div>
         </div>
@@ -103,5 +104,3 @@ const RetroPixelTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, 
     </div>
   );
 };
-
-export default RetroPixelTemplate;

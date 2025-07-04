@@ -1,12 +1,16 @@
 
+
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { HomeIcon } from '../icons/HomeIcon.tsx'; 
 import { UsersIcon } from '../icons/UsersIcon.tsx';
 import { ListBulletIcon } from '../icons/ListBulletIcon.tsx';
 import { CreditCardIcon } from '../icons/CreditCardIcon.tsx';
 import { KeyIcon } from '../icons/KeyIcon.tsx';
 import { EnvelopeIcon } from '../icons/EnvelopeIcon.tsx';
+import { NewspaperIcon } from '../icons/NewspaperIcon.tsx';
+
+const { NavLink } = ReactRouterDOM;
 
 const AdminSidebar: React.FC = () => {
   const commonLinkClasses = "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-150";
@@ -37,6 +41,13 @@ const AdminSidebar: React.FC = () => {
         >
           <ListBulletIcon className="w-5 h-5 mr-3" />
           Plans
+        </NavLink>
+        <NavLink 
+          to="blogs"
+          className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses} mr-2 md:mr-0 whitespace-nowrap`}
+        >
+          <NewspaperIcon className="w-5 h-5 mr-3" />
+          Blogs
         </NavLink>
          <NavLink 
           to="messages"

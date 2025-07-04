@@ -2,18 +2,18 @@ import React from 'react';
 import { InvoiceTemplateProps } from '../../../types.ts';
 import { INITIAL_CUSTOMIZATION_STATE } from '../../../constants.ts';
 
-const CustomTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan, customization }) => {
+export const CustomTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCodeDataUrl, userPlan, customization }) => {
   const custom = customization || INITIAL_CUSTOMIZATION_STATE;
 
   const subtotal = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = (subtotal * invoice.taxRate) / 100;
+  const totalTaxAmount = (invoice.taxes || []).reduce((acc, tax) => acc + (subtotal * tax.rate) / 100, 0);
   let discountAmount = 0;
   if (invoice.discount.value > 0) {
     discountAmount = invoice.discount.type === 'percentage' 
       ? (subtotal * invoice.discount.value) / 100 
       : invoice.discount.value;
   }
-  const total = subtotal + taxAmount - discountAmount;
+  const total = subtotal + totalTaxAmount - discountAmount;
 
   const customStyles = {
     '--primary-color': custom.primaryColor,
@@ -113,7 +113,12 @@ const CustomTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
         <div className="w-full md:w-auto md:min-w-[280px]">
           <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span>Subtotal:</span><span className="font-medium">{invoice.currency} {subtotal.toFixed(2)}</span></div>
-            {invoice.taxRate > 0 && (<div className="flex justify-between"><span>Tax ({invoice.taxRate}%):</span><span className="font-medium">{invoice.currency} {taxAmount.toFixed(2)}</span></div>)}
+            {(invoice.taxes || []).map(tax => (
+                <div key={tax.id} className="flex justify-between">
+                    <span>{tax.name} ({tax.rate}%):</span>
+                    <span className="font-medium">{invoice.currency} {((subtotal * tax.rate) / 100).toFixed(2)}</span>
+                </div>
+            ))}
             {invoice.discount.value > 0 && (<div className="flex justify-between" style={{color: custom.accentColor}}><span>Discount:</span><span className="font-medium">- {invoice.currency} {discountAmount.toFixed(2)}</span></div>)}
             <div className="flex justify-between pt-2 mt-2" style={{borderTop: `2px solid ${custom.primaryColor}`}}>
               <span className="font-bold text-lg" style={{fontFamily: `var(--heading-font)`, color: `var(--primary-color)`}}>Total:</span>
@@ -147,5 +152,3 @@ const CustomTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, upiLink, qrCo
     </div>
   );
 };
-
-export default CustomTemplate;

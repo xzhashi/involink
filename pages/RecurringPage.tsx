@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { fetchUserDocuments, deleteInvoiceFromSupabase, updateInvoiceStatus } from '../services/supabaseClient.ts';
 import { InvoiceData, RecurringStatus } from '../types.ts';
@@ -8,6 +9,8 @@ import Button from '../components/common/Button.tsx';
 import { PlusIcon } from '../components/icons/PlusIcon.tsx';
 import { PencilIcon } from '../components/icons/PencilIcon.tsx';
 import { TrashIcon } from '../components/icons/TrashIcon.tsx';
+
+const { Link, useNavigate } = ReactRouterDOM;
 
 const RecurringPage: React.FC = () => {
     const { user, loading: authLoading } = useAuth();

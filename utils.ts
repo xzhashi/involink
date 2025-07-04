@@ -3,7 +3,10 @@ import QRCode from 'qrcode';
 
 export const calculateInvoiceTotal = (invoice: InvoiceData): number => {
   const subtotal = invoice.items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
-  const taxAmount = (subtotal * (invoice.taxRate || 0)) / 100;
+  
+  const taxAmount = (invoice.taxes || []).reduce((acc, tax) => {
+    return acc + (subtotal * (tax.rate || 0)) / 100;
+  }, 0);
   
   let discountAmount = 0;
   if (invoice.discount && invoice.discount.value > 0) {

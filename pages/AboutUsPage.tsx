@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import Button from '../components/common/Button.tsx';
 import { SparklesIcon } from '../components/icons/SparklesIcon.tsx';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon.tsx';
 import { UsersIcon } from '../components/icons/UsersIcon.tsx';
+
+const { Link } = ReactRouterDOM;
 
 const ValueCard: React.FC<{ title: string; description: string; icon: React.ReactNode }> = ({ title, description, icon }) => (
     <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 flex items-start space-x-4">

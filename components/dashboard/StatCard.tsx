@@ -1,50 +1,54 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+import { ArrowRightIcon } from '../icons/ArrowRightIcon.tsx';
+
+const { Link } = ReactRouterDOM;
 
 interface StatCardProps {
   title: string;
   value: string;
   label?: string;
-  icon: React.ReactNode;
+  icon: React.ReactElement;
   variant?: 'primary' | 'default';
   footerLink?: { to: string; text: string; };
-  children?: React.ReactNode;
   className?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, label, icon, variant = 'default', footerLink, children, className = '' }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, label, icon, variant = 'default', footerLink, className = '' }) => {
   const isPrimary = variant === 'primary';
 
   const cardClasses = `
-    p-6 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1 group
-    ${isPrimary ? 'bg-neutral-800 text-white' : 'bg-white text-neutral-800 border border-neutral-200/80'}
+    p-6 rounded-2xl flex flex-col transition-all duration-300 transform hover:-translate-y-1 group relative overflow-hidden min-h-[170px] shadow-md hover:shadow-xl
+    ${isPrimary ? 'bg-gradient-to-br from-slate-800 to-black text-white hover:shadow-purple-400/20' : 'bg-white text-slate-800 border border-slate-100/80 hover:border-slate-200'}
     ${className}
   `;
 
-  const iconWrapperClasses = `
-    w-12 h-12 flex items-center justify-center rounded-xl mb-4
-    ${isPrimary ? 'bg-white/10 text-white' : 'bg-slate-100 text-neutral-700'}
-  `;
+  const valueClasses = `text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight ${isPrimary ? 'text-white' : 'text-slate-900'}`;
+  const titleClasses = `text-xs sm:text-sm font-semibold uppercase tracking-wider ${isPrimary ? 'text-slate-400' : 'text-slate-500'}`;
+  const labelClasses = `text-xs mt-1 leading-tight ${isPrimary ? 'text-slate-400' : 'text-slate-500'}`;
+  const linkClasses = `text-xs font-semibold flex items-center transition-colors duration-200 ${isPrimary ? 'text-slate-300 group-hover:text-white' : 'text-slate-600 group-hover:text-slate-900'}`;
 
   return (
     <div className={cardClasses}>
-      <div>
-        <div className={iconWrapperClasses}>
-          {icon}
-        </div>
-        <p className={`text-sm font-medium ${isPrimary ? 'text-neutral-400' : 'text-neutral-500'}`}>{title}</p>
-        <p className="text-2xl sm:text-3xl font-bold mt-1">{value}</p>
-        {label && <p className={`text-xs mt-1 ${isPrimary ? 'text-neutral-400' : 'text-neutral-500'}`}>{label}</p>}
+      {/* Decorative Icon - bigger, better placed, and with enhanced hover effect */}
+      <div className={`absolute -top-4 -right-8 w-32 h-32 opacity-[.08] transition-all duration-500 ease-in-out group-hover:scale-125 group-hover:opacity-[.15] ${isPrimary ? 'text-white' : 'text-slate-800'}`}>
+        {icon}
       </div>
-      {children}
+
+      <div className="relative z-10 flex-grow">
+        <p className={titleClasses}>{title}</p>
+        <p className={valueClasses}>{value}</p>
+        {label && <p className={labelClasses}>{label}</p>}
+      </div>
+      
       {footerLink && (
-        <Link to={footerLink.to} className={`mt-4 text-xs font-semibold flex items-center group-hover:underline ${isPrimary ? 'text-neutral-300' : 'text-neutral-600'}`}>
-          {footerLink.text}
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 ml-1 transition-transform group-hover:translate-x-1">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          </svg>
-        </Link>
+        <div className="relative z-10 mt-auto">
+            <Link to={footerLink.to} className={linkClasses}>
+              <span>{footerLink.text}</span>
+              <ArrowRightIcon className="w-3.5 h-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
+            </Link>
+        </div>
       )}
     </div>
   );

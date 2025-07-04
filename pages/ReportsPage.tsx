@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { fetchReportsData } from '../services/supabaseClient.ts';
 import { calculateInvoiceTotal } from '../utils.ts';
@@ -34,7 +35,7 @@ const fromSupabaseInvoiceFormatForCalc = (row: any): InvoiceData => {
         sender: {name: '', address: ''},
         recipient: {name: '', address: ''},
         items: jsonData.items || [],
-        taxRate: jsonData.taxRate || 0,
+        taxes: jsonData.taxes || [],
         discount: jsonData.discount || { type: 'percentage', value: 0 },
         currency: jsonData.currency || 'USD',
         selectedTemplateId: '',
@@ -61,7 +62,7 @@ const ReportsPage: React.FC = () => {
                 // Process for RevenueChart
                 const monthlyRevenue: { [key: string]: number } = {};
                 invoices.forEach(inv => {
-                    if (inv.type === 'invoice') {
+                    if (inv.type === 'invoice' && inv.created_at) {
                         const date = new Date(inv.created_at);
                         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                         const total = calculateInvoiceTotal(fromSupabaseInvoiceFormatForCalc(inv));
@@ -113,7 +114,9 @@ const ReportsPage: React.FC = () => {
                 // Process for StatusDoughnutChart
                 const statusCounts: { [key in InvoiceStatus]?: number } = {};
                 invoices.forEach(inv => {
-                    statusCounts[inv.status] = (statusCounts[inv.status] || 0) + 1;
+                    if(inv.status) {
+                        statusCounts[inv.status] = (statusCounts[inv.status] || 0) + 1;
+                    }
                 });
                 
                 const statusLabels = Object.keys(statusCounts);

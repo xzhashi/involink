@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+
+import React, { useState, useEffect, useRef } from 'react';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { usePlans } from '../contexts/PlanContext.tsx';
 import { supabase, uploadCompanyLogo } from '../services/supabaseClient.ts';
@@ -9,17 +10,27 @@ import Textarea from '../components/common/Textarea.tsx';
 import Select from '../components/common/Select.tsx';
 import { CompanyDetails } from '../types.ts';
 import { CURRENCY_OPTIONS } from '../currencies.ts';
+import { PowerIcon } from '../components/icons/PowerIcon.tsx';
+import { TrashIcon } from '../components/icons/TrashIcon.tsx';
+import { useLocalization } from '../contexts/LocalizationContext.tsx';
 
-const SettingsCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <section className="bg-white p-6 rounded-lg shadow-md">
-    <h2 className="text-xl font-semibold text-neutral-darkest mb-4 border-b pb-3">{title}</h2>
-    {children}
+const { Link } = ReactRouterDOM;
+
+const SettingsCard: React.FC<{ title: string; description?: string; children: React.ReactNode; className?: string }> = ({ title, description, children, className = '' }) => (
+  <section className={`bg-white p-6 rounded-2xl shadow-lg border border-slate-100 ${className}`}>
+    <h2 className="text-xl font-bold text-slate-800 tracking-tight">{title}</h2>
+    {description && <p className="text-sm text-slate-500 mt-1 mb-6">{description}</p>}
+    <div className={description ? 'border-t border-slate-200/80 pt-6' : 'mt-4'}>
+      {children}
+    </div>
   </section>
 );
 
 const SettingsPage: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const { currentUserPlan } = usePlans();
+  const { setCurrency: setGlobalCurrency } = useLocalization();
+  const logoUploadRef = useRef<HTMLInputElement>(null);
   
   const [profile, setProfile] = useState<CompanyDetails>({ name: '', address: '', phone: '', email: '', logoUrl: '' });
   const [currency, setCurrency] = useState<string>('USD');
@@ -60,12 +71,10 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-
   const handleSaveSettings = async () => {
     setSavingStatus('saving');
     setErrorMessage('');
     try {
-      // Refresh user to get latest metadata before overwriting
       await supabase.auth.refreshSession();
       const { data: { user: latestUser } } = await supabase.auth.getUser();
 
@@ -85,93 +94,102 @@ const SettingsPage: React.FC = () => {
       setTimeout(() => setSavingStatus('idle'), 3000);
     }
   };
+  
+  const handleDeleteAccount = () => {
+      if(window.confirm("Are you sure you want to delete your account? This action is irreversible and all your data will be lost.")) {
+          alert("Account deletion is a critical feature. Please contact support to proceed.");
+          // To implement: call a Supabase Edge function to delete user data and auth user.
+      }
+  }
 
-  if (authLoading) return <div>Loading settings...</div>
+  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCurrency = e.target.value;
+    setCurrency(newCurrency); // Update local state for the form
+    setGlobalCurrency(newCurrency); // Update global context for real-time app changes
+  };
+
+  if (authLoading) return <div>Loading settings...</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <h1 className="text-3xl font-bold text-neutral-darkest mb-8">Settings</h1>
-      <div className="space-y-8">
-        <SettingsCard title="Account Information">
-          <Input 
-            label="Email Address" 
-            id="email" 
-            value={user?.email || ''} 
-            readOnly 
-            disabled 
-            wrapperClassName="!mb-0" 
-            className="bg-neutral-lightest cursor-default"
-          />
-          <p className="text-xs text-neutral-DEFAULT mt-1">Your email address is used for login and cannot be changed here.</p>
-        </SettingsCard>
-
-        <SettingsCard title="Profile Details">
-          <p className="text-sm text-neutral-DEFAULT mb-4">This information will be used to pre-fill the 'From' section on new invoices.</p>
-          <div className="space-y-4">
-              <Input label="Company Name" name="name" value={profile.name || ''} onChange={handleProfileChange} />
-              <Textarea label="Company Address" name="address" value={profile.address || ''} onChange={handleProfileChange} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label="Company Email" name="email" type="email" value={profile.email || ''} onChange={handleProfileChange} />
-                <Input label="Company Phone" name="phone" type="tel" value={profile.phone || ''} onChange={handleProfileChange} />
-              </div>
-              
-               <div className="mt-4">
-                  <label className="block text-sm font-medium text-neutral-dark mb-2">Company Logo</label>
-                  <div className="flex items-center gap-4">
-                      <img 
-                          src={profile.logoUrl || `https://api.dicebear.com/8.x/initials/svg?seed=${profile.name || 'C'}`} 
-                          alt="Company Logo Preview" 
-                          className="w-16 h-16 rounded-md object-cover bg-slate-100 border"
-                      />
-                      <div className="flex-grow">
-                          <input
-                              type="file"
-                              id="logo-upload"
-                              accept="image/png, image/jpeg, image/gif"
-                              onChange={handleLogoUpload}
-                              disabled={logoUploading}
-                              className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-lightest file:text-primary-dark hover:file:bg-slate-200"
-                          />
-                          {logoUploading && <p className="text-xs text-neutral-DEFAULT mt-1 animate-pulse">Uploading...</p>}
-                          {logoError && <p className="text-xs text-red-500 mt-1">{logoError}</p>}
-                          <p className="text-xs text-neutral-DEFAULT mt-1">PNG, JPG, or GIF. Max 2MB. Your new logo is ready to be saved.</p>
-                      </div>
-                  </div>
-              </div>
-
+    <div className="max-w-4xl mx-auto space-y-8 pb-24">
+      <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">Settings</h1>
+      
+      <SettingsCard title="Company Profile" description="This information will pre-fill new invoices.">
+          <div className="mt-6 flex items-center gap-5">
+            <img 
+              src={profile.logoUrl || `https://api.dicebear.com/8.x/initials/svg?seed=${profile.name || 'C'}&backgroundColor=c084fc,bbf7d0,facc15&radius=50`}
+              alt="Company Logo Preview" 
+              className="w-20 h-20 rounded-full object-cover bg-slate-100 border-2 border-white shadow-md"
+            />
+            <div>
+              <input 
+                type="file" 
+                ref={logoUploadRef} 
+                className="hidden"
+                accept="image/png, image/jpeg, image/gif"
+                onChange={handleLogoUpload}
+                disabled={logoUploading}
+              />
+              <Button onClick={() => logoUploadRef.current?.click()} variant="secondary" disabled={logoUploading}>
+                {logoUploading ? 'Uploading...' : 'Change Logo'}
+              </Button>
+              {logoError && <p className="text-xs text-red-500 mt-1">{logoError}</p>}
+              <p className="text-xs text-slate-400 mt-1">PNG, JPG, or GIF (Max 2MB)</p>
+            </div>
           </div>
-        </SettingsCard>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Input label="Company Name" name="name" value={profile.name || ''} onChange={handleProfileChange} />
+            <Input label="Company Email" name="email" type="email" value={profile.email || ''} onChange={handleProfileChange} />
+            <Textarea label="Company Address" name="address" value={profile.address || ''} onChange={handleProfileChange} className="md:col-span-2" />
+            <Input label="Company Phone" name="phone" type="tel" value={profile.phone || ''} onChange={handleProfileChange} />
+          </div>
+      </SettingsCard>
 
-        <SettingsCard title="Preferences">
+       <SettingsCard title="Preferences" description="Customize your default settings for new documents.">
            <Select 
             label="Default Currency"
             name="currency"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={handleCurrencyChange}
             options={CURRENCY_OPTIONS}
            />
-           <p className="text-xs text-neutral-DEFAULT -mt-3">This will be the default currency for new invoices.</p>
         </SettingsCard>
         
-        <div className="flex justify-end items-center gap-4">
-          {savingStatus === 'saving' && <span className="text-sm italic text-neutral-DEFAULT">Saving...</span>}
-          {savingStatus === 'saved' && <span className="text-sm italic text-green-600">Settings saved!</span>}
-          {savingStatus === 'error' && <span className="text-sm italic text-red-500">{errorMessage}</span>}
-          <Button onClick={handleSaveSettings} variant="primary" disabled={savingStatus === 'saving'}>
-            {savingStatus === 'saving' ? 'Saving...' : 'Save All Settings'}
-          </Button>
-        </div>
-
-        <SettingsCard title="Subscription">
-          <p className="text-neutral-DEFAULT mb-1">You are currently on the <span className="font-semibold text-primary-DEFAULT">{currentUserPlan?.name || '...'}</span> plan.</p>
-          <p className="text-neutral-DEFAULT">Manage your plan, view billing history, and update payment methods.</p>
-          <Link to="/pricing">
-            <Button variant="secondary" className="mt-4">
-              View Plans & Upgrade
-            </Button>
-          </Link>
+        <SettingsCard title="Subscription" description={`You are currently on the ${currentUserPlan?.name || '...'} plan.`}>
+            <Link to="/pricing">
+                <Button variant="secondary" className="mt-4">
+                  View Plans & Manage Subscription
+                </Button>
+            </Link>
         </SettingsCard>
-      </div>
+        
+        <SettingsCard title="Danger Zone" className="border-red-500/30 bg-red-50/30">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 className="font-semibold text-slate-800">Logout</h3>
+                    <p className="text-sm text-slate-500">End your current session on this device.</p>
+                </div>
+                 <Button onClick={() => logout()} variant="secondary" leftIcon={<PowerIcon className="w-5 h-5"/>}>Logout</Button>
+            </div>
+             <div className="mt-6 pt-6 border-t border-red-200/80 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 className="font-semibold text-red-800">Delete Account</h3>
+                    <p className="text-sm text-red-600">Permanently delete your account and all associated data. This action is irreversible.</p>
+                </div>
+                 <Button onClick={handleDeleteAccount} variant="danger" leftIcon={<TrashIcon className="w-5 h-5"/>}>Delete Account</Button>
+            </div>
+        </SettingsCard>
+
+        <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm -mx-8 -mb-8 py-4 px-8 border-t border-slate-200">
+           <div className="max-w-4xl mx-auto flex justify-end items-center gap-4">
+              {savingStatus === 'saving' && <span className="text-sm italic text-slate-500">Saving...</span>}
+              {savingStatus === 'saved' && <span className="text-sm italic text-green-600">Settings saved successfully!</span>}
+              {savingStatus === 'error' && <span className="text-sm italic text-red-500">{errorMessage}</span>}
+              <Button onClick={handleSaveSettings} variant="primary" disabled={savingStatus === 'saving' || logoUploading}>
+                {savingStatus === 'saving' ? 'Saving...' : 'Save Changes'}
+              </Button>
+           </div>
+        </div>
     </div>
   );
 };
